@@ -1,3 +1,6 @@
+"""
+This is neat little utility that gets pricing for Lego sets.
+"""
 import json
 import argparse
 import sys
@@ -17,17 +20,20 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S')
 
-# Get info and return key elements
-def getDetails(set_number):
+"""
+This calls the API functions to get the data.
+"""
+def getDetails(set_number, auth_params):
     logging.debug("Getting details for " + str(set_number))
-    h = html.parser
+    h_parse = html.parser
 
     if set_number == "40158":
-        itemType = Type.GEAR
+        item_type = Type.GEAR
     else:
-        itemType = Type.SET
-    
-    json_obj = get_price_guide(itemType, set_number, new_or_used=NewOrUsed.NEW, country_code="US", region="north_america", auth=auth)
+        item_type = Type.SET
+
+    json_obj = get_price_guide(item_type, set_number, new_or_used=NewOrUsed.NEW, \
+                               country_code="US", region="north_america", auth=auth_params)
 
     logging.debug(json.dumps(json_obj, indent=4, sort_keys=True))
     meta = json_obj['meta']
@@ -39,16 +45,16 @@ def getDetails(set_number):
         #print("Meta Data")
         #print(meta)
 
-        typeData = get_item(itemType, set_number, auth=auth)      
-        logging.debug(json.dumps(typeData, indent=4, sort_keys=True))
-        
-        categoryObj = get_category(typeData['data']['category_id'], auth=auth)
-        logging.debug(json.dumps(categoryObj, indent=4, sort_keys=True))
-        
+        type_data = get_item(item_type, set_number, auth=auth_params)      
+        logging.debug(json.dumps(type_data, indent=4, sort_keys=True))
+
+        category_data = get_category(type_data['data']['category_id'], auth=auth_params)
+        logging.debug(json.dumps(category_data, indent=4, sort_keys=True))
+
         elem_data = {}
         elem_data[set_number] = {}
-        elem_data[set_number]['name'] = h.unescape(typeData['data']['name'])
-        elem_data[set_number]['category'] = h.unescape(categoryObj['data']['category_name'])
+        elem_data[set_number]['name'] = h_parse.unescape(type_data['data']['name'])
+        elem_data[set_number]['category'] = h_parse.unescape(category_data['data']['category_name'])
         elem_data[set_number]['avg'] = round(int(float(data['avg_price'])))
         elem_data[set_number]['max'] = round(int(float(data['max_price'])))
         elem_data[set_number]['min'] = round(int(float(data['min_price'])))
@@ -61,107 +67,124 @@ def getDetails(set_number):
         logging.warning("API Message!! " + str(meta['message']))
         return 0
 
-def printDetails(elementData, number):
-        logging.info("Item: " + number)
-        logging.info("  Name: " + elementData['name'])
-        logging.info("  Category: " + elementData['category'])
-        logging.info("  Avg Price: " + str(elementData['avg']) + " " + elementData['currency'])
-        logging.info("  Max Price: " + str(elementData['max']) + " " + elementData['currency'])
-        logging.info("  Min Price: " + str(elementData['min']) + " " + elementData['currency'])
-        logging.info("  Quantity avail: " + str(elementData['quantity']))
+"""
+This prints stuff to the screen.
+"""
+def print_details(element_data, number):
+    logging.info("Item: " + number)
+    logging.info("  Name: " + element_data['name'])
+    logging.info("  Category: " + element_data['category'])
+    logging.info("  Avg Price: " + str(element_data['avg']) + " " + element_data['currency'])
+    logging.info("  Max Price: " + str(element_data['max']) + " " + element_data['currency'])
+    logging.info("  Min Price: " + str(element_data['min']) + " " + element_data['currency'])
+    logging.info("  Quantity avail: " + str(element_data['quantity']))
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-s', '--set', type=str)
-parser.add_argument('-f', '--file', type=str)
-parser.add_argument('-v', '--verbose', action="store_true")
-args = parser.parse_args()
+"""
+Setup XLS
+"""
+def setup_xls_writer():
+    workbook = xlsxwriter.Workbook('Items.xlsx')
+    worksheet = workbook.add_worksheet('Items')
 
-set_num = args.set
-filename = args.file
+    # Start from the first cell. Rows and columns are zero indexed.
+    row = 1
+    col = 1
 
-config = configparser.ConfigParser()
+    worksheet.set_column('B:B', 20)
+    worksheet.set_column('C:C', 30)
+    worksheet.set_column('D:D', 20)
+    worksheet.set_column('E:E', 20)
+    worksheet.set_column('F:F', 20)
+    worksheet.set_column('G:G', 20)
+    worksheet.set_column('F:F', 20)
 
-config.read('config.ini')
+    cell_format = workbook.add_format()
+    cell_format.set_align('center')
+    cell_format.set_align('vcenter')
 
-# fill in with your data from https://www.bricklink.com/v2/api/register_consumer.page
-consumer_key = config['secrets']['consumer_key']
-consumer_secret = config['secrets']['consumer_secret']
-token_value = config['secrets']['token_value']
-token_secret = config['secrets']['token_secret']
-auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
+    header_format = workbook.add_format()
+    header_format.set_align('center')
+    header_format.set_align('vcenter')
+    header_format.set_bold()
+    header_format.set_bg_color('#C0C0C0')
 
+    xls_headers = ['Item', 'Name', 'Category', 'Avg Price', 'Min Price', 'Max Price', 'Quantity']
 
-workbook = xlsxwriter.Workbook('Expenses01.xlsx')
-worksheet = workbook.add_worksheet('For Sale')
+    col_adjust = 0
+    for headers in xls_headers:
+        worksheet.write(row, col+col_adjust, headers, header_format)
+        col_adjust += 1
 
-# Start from the first cell. Rows and columns are zero indexed.
-row = 1
-col = 1
+    return workbook, worksheet, cell_format
+"""
+The main routine.
+"""
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--set', type=str)
+    parser.add_argument('-f', '--file', type=str)
+    parser.add_argument('-v', '--verbose', action="store_true")
+    args = parser.parse_args()
 
-worksheet.set_column('B:B', 20)
-worksheet.set_column('C:C', 20)
-worksheet.set_column('D:D', 20)
-worksheet.set_column('E:E', 20)
-worksheet.set_column('F:F', 20)
-worksheet.set_column('G:G', 20)
-worksheet.set_column('F:F', 20)
+    (workbook, worksheet, cell_format) = setup_xls_writer()
 
-cell_format = workbook.add_format()
-cell_format.set_align('center')
-cell_format.set_align('vcenter')
+    set_num = args.set
+    filename = args.file
 
-header_format = workbook.add_format()
-header_format.set_align('center')
-header_format.set_align('vcenter')
-header_format.set_bold()
-header_format.set_bg_color('#C0C0C0')
+    config = configparser.ConfigParser()
+    config.read('config.ini')
 
-xls_headers = ['Item', 'Name', 'Category', 'Avg Price', 'Min Price', 'Max Price', 'Quantity']
+    # fill in with your data from https://www.bricklink.com/v2/api/register_consumer.page
+    consumer_key = config['secrets']['consumer_key']
+    consumer_secret = config['secrets']['consumer_secret']
+    token_value = config['secrets']['token_value']
+    token_secret = config['secrets']['token_secret']
+    auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
 
-i=0
-for x in xls_headers:
-    worksheet.write(row, col+i, x, header_format)
-    i += 1
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
-if args.verbose:
-    logging.getLogger().setLevel(logging.DEBUG)
+    if set_num:
+        res = getDetails(set_num, auth)
+        logging.debug(json.dumps(res, indent=4, sort_keys=True))
+        for key in res:
+            print_details(res[key], key)
+    elif filename:
+        if exists(filename):
+            logging.info("Processing sets in " + filename)
 
-if set_num:
-    res = getDetails(set_num)
-    logging.debug(json.dumps(res, indent=4, sort_keys=True))
-    for key in res:
-        printDetails(res[key],key)
-elif filename:
-    if exists(filename):
-        logging.info("Processing sets in " + filename)
+            if stat(filename).st_size == 0:
+                logging.error("File is empty!!")
+                sys.exit()
+            else:
+                file_handler = open(filename, "r")
+                total = 0
+                row = 1
+                col = 1
+                while True:
+                    line = file_handler.readline()
+                    if not line:
+                        break
+                    #print(line.strip())
+                    number = line.strip()
+                    res = getDetails(number, auth)
+                    for key in res:
+                        print_details(res[key], key)
+                        logging.debug(json.dumps(res, indent=4, sort_keys=True))
+                        total += res[key]['avg']
 
-        if stat(filename).st_size == 0:
-            logging.error("File is empty!!")
-            sys.exit()
-        else:
-            FileHandler = open(filename, "r")
-            total = 0
-            while True:
-                line = FileHandler.readline()
-                if not line:
-                    break
-                #print(line.strip())
-                number = line.strip()
-                res = getDetails(number)
-                for key in res:
-                    printDetails(res[key],key)
-                    logging.debug(json.dumps(res, indent=4, sort_keys=True))
-                    total += res[key]['avg']
+                        row += 1
+                        worksheet.write(row, col, key, cell_format)
+                        worksheet.write(row, col+1, res[key]['name'], cell_format)
+                        worksheet.write(row, col+2, res[key]['category'], cell_format)
+                        worksheet.write(row, col+3, res[key]['avg'], cell_format)
+                        worksheet.write(row, col+4, res[key]['min'], cell_format)
+                        worksheet.write(row, col+5, res[key]['max'], cell_format)
+                        worksheet.write(row, col+6, res[key]['quantity'], cell_format)
 
-                    row += 1
-                    worksheet.write(row,col, key, cell_format)
-                    worksheet.write(row,col+1, res[key]['name'], cell_format)
-                    worksheet.write(row,col+2, res[key]['category'], cell_format)
-                    worksheet.write(row,col+3, res[key]['avg'], cell_format)
-                    worksheet.write(row,col+4, res[key]['min'], cell_format)
-                    worksheet.write(row,col+5, res[key]['max'], cell_format)
-                    worksheet.write(row,col+6, res[key]['quantity'], cell_format)
+                logging.info("Total: " + str(total) + "USD")
 
-            logging.info("Total: " + str(total) + "USD")
+    workbook.close()
 
-workbook.close()
+if __name__ == '__main__':
+    main()
