@@ -10,6 +10,7 @@ from bricklink_api.category import get_category
 import html
 from html.parser import HTMLParser
 import xlsxwriter
+import configparser
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -69,13 +70,6 @@ def printDetails(elementData, number):
         logging.info("  Min Price: " + str(elementData['min']) + " " + elementData['currency'])
         logging.info("  Quantity avail: " + str(elementData['quantity']))
 
-# fill in with your data from https://www.bricklink.com/v2/api/register_consumer.page
-consumer_key = ""
-consumer_secret = ""
-token_value = ""
-token_secret = ""
-auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
-
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--set', type=str)
 parser.add_argument('-f', '--file', type=str)
@@ -84,6 +78,18 @@ args = parser.parse_args()
 
 set_num = args.set
 filename = args.file
+
+config = configparser.ConfigParser()
+
+config.read('config.ini')
+
+# fill in with your data from https://www.bricklink.com/v2/api/register_consumer.page
+consumer_key = config['secrets']['consumer_key']
+consumer_secret = config['secrets']['consumer_secret']
+token_value = config['secrets']['token_value']
+token_secret = config['secrets']['token_secret']
+auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
+
 
 workbook = xlsxwriter.Workbook('Expenses01.xlsx')
 worksheet = workbook.add_worksheet('For Sale')
