@@ -14,6 +14,7 @@ import html
 from html.parser import HTMLParser
 import xlsxwriter
 import configparser
+from datetime import datetime
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -45,7 +46,7 @@ def getDetails(set_number, auth_params):
         #print("Meta Data")
         #print(meta)
 
-        type_data = get_item(item_type, set_number, auth=auth_params)      
+        type_data = get_item(item_type, set_number, auth=auth_params)
         logging.debug(json.dumps(type_data, indent=4, sort_keys=True))
 
         category_data = get_category(type_data['data']['category_id'], auth=auth_params)
@@ -84,7 +85,10 @@ Setup XLS
 """
 def setup_xls_writer():
     workbook = xlsxwriter.Workbook('Items.xlsx')
-    worksheet = workbook.add_worksheet('Items')
+
+    now = datetime.now() # current date and time
+    date_stamp = now.strftime("%m_%d_%Y")
+    worksheet = workbook.add_worksheet('Items_'+date_stamp)
 
     # Start from the first cell. Rows and columns are zero indexed.
     row = 1
@@ -139,13 +143,19 @@ def main():
     consumer_secret = config['secrets']['consumer_secret']
     token_value = config['secrets']['token_value']
     token_secret = config['secrets']['token_secret']
-    auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
+    try:
+        auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
+    except Exception as e:
+        logging.error('Could not get auth token')
+        sys.exit(1)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
     if set_num:
         res = getDetails(set_num, auth)
+        if not res:
+            sys.exit(1)
         logging.debug(json.dumps(res, indent=4, sort_keys=True))
         for key in res:
             print_details(res[key], key)
@@ -168,6 +178,8 @@ def main():
                     #print(line.strip())
                     number = line.strip()
                     res = getDetails(number, auth)
+                    if not res:
+                        sys.exit(1)
                     for key in res:
                         print_details(res[key], key)
                         logging.debug(json.dumps(res, indent=4, sort_keys=True))
