@@ -46,7 +46,7 @@ token_secret = <TokenSecret>
 
 ## Usage
 
-Below is the output show the attributes used.
+Below is the output showing the attributes used.
 
 There are two modes; Printing details about a single set `-s` or multiple sets `-f`.
 
