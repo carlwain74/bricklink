@@ -43,10 +43,6 @@ def getDetails(set_number, auth_params):
 
     if meta['code'] == 200:
         data = json_obj['data']
-        #print("Core Data")
-        #print(data)
-        #print("Meta Data")
-        #print(meta)
 
         type_data = get_item(item_type, set_number, auth=auth_params)
         logging.debug(json.dumps(type_data, indent=4, sort_keys=True))
@@ -75,12 +71,12 @@ This prints stuff to the screen.
 """
 def print_details(element_data, number):
     logging.info("Item: " + number)
-    logging.info("  Name: " + element_data['name'])
-    logging.info("  Category: " + element_data['category'])
-    logging.info("  Avg Price: " + str(element_data['avg']) + " " + element_data['currency'])
-    logging.info("  Max Price: " + str(element_data['max']) + " " + element_data['currency'])
-    logging.info("  Min Price: " + str(element_data['min']) + " " + element_data['currency'])
-    logging.info("  Quantity avail: " + str(element_data['quantity']))
+    logging.debug("  Name: " + element_data['name'])
+    logging.debug("  Category: " + element_data['category'])
+    logging.debug("  Avg Price: " + str(element_data['avg']) + " " + element_data['currency'])
+    logging.debug("  Max Price: " + str(element_data['max']) + " " + element_data['currency'])
+    logging.debug("  Min Price: " + str(element_data['min']) + " " + element_data['currency'])
+    logging.debug("  Quantity avail: " + str(element_data['quantity']))
 
 """
 Create workbook
@@ -199,6 +195,8 @@ def main():
                 total = 0
                 _row = 6
                 _col = 2
+                now = datetime.now()
+                date_stamp = now.strftime("%m-%d-%Y")
                 while True:
                     line = file_handler.readline()
                     if not line:
@@ -215,10 +213,11 @@ def main():
                         for index in range(6, 1000):
                             if worksheet.cell(row=index, column=2).value is None:
                                 _row = index
-                                logging.info('Inserting at ros ' + str(_row))
+                                logging.debug('Inserting at ros ' + str(_row))
                                 break
                             else:
-                                logging.info('Row contents: '+worksheet.cell(row=index, column=2).value)
+                                logging.debug('Row contents: '+
+                                    worksheet.cell(row=index, column=2).value)
 
                         print_details(res[key], key)
                         logging.debug(json.dumps(res, indent=4, sort_keys=True))
@@ -228,8 +227,6 @@ def main():
                         d.alignment = Alignment(horizontal="center", vertical="center")
                         d = worksheet.cell(row=3, column=3, value=res[key]['category'])
                         d.alignment = Alignment(horizontal="center", vertical="center")
-                        now = datetime.now()
-                        date_stamp = now.strftime("%m-%d-%Y")
                         d = worksheet.cell(row=_row, column=_col, value=date_stamp)
                         d = worksheet.cell(row=_row, column=_col+1, value=res[key]['avg'])
                         d.alignment = Alignment(horizontal="center", vertical="center")
@@ -240,16 +237,37 @@ def main():
                         d = worksheet.cell(row=_row, column=_col+4, value=res[key]['quantity'])
                         d.alignment = Alignment(horizontal="center", vertical="center")
 
-                        #worksheet.write(row, col, key, cell_format)
-                        #worksheet.write(row, col+1, res[key]['name'], cell_format)
-                        #worksheet.write(row, col+2, res[key]['category'], cell_format)
-                        #worksheet.write(row, col+3, res[key]['avg'], cell_format)
-                        #worksheet.write(row, col+4, res[key]['min'], cell_format)
-                        #worksheet.write(row, col+5, res[key]['max'], cell_format)
-                        #worksheet.write(row, col+6, res[key]['quantity'], cell_format)
-
                 logging.info("Total: " + str(total) + "USD")
 
+                if 'Summary' in workbook.sheetnames:
+                    summary = workbook['Summary']
+                else:
+                    summary = workbook.create_sheet("Summary", 0)
+
+                    summary.column_dimensions['B'].width = 10
+                    summary.column_dimensions['C'].width = 20
+
+                    header_color = "00C0C0C0"
+                    d = summary.cell(row=2, column=2, value="Date")
+                    d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
+                    d.alignment = Alignment(horizontal="center", vertical="center")
+
+                    d = summary.cell(row=2, column=3, value="Total")
+                    d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
+                    d.alignment = Alignment(horizontal="center", vertical="center")
+
+                for index in range(3, 1000):
+                    if summary.cell(row=index, column=2).value is None:
+                        _srow = index
+                        logging.debug('Inserting at ros ' + str(_srow))
+                        break
+                    else:
+                        logging.debug('Row contents: '+summary.cell(row=index, column=2).value)
+
+                d = summary.cell(row=_srow, column=2, value=date_stamp)
+                d.alignment = Alignment(horizontal="center", vertical="center")
+                d = summary.cell(row=_srow, column=3, value=total)
+                d.alignment = Alignment(horizontal="center", vertical="center")
         workbook.save(filename=xls_filename)
 
 if __name__ == '__main__':
