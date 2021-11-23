@@ -94,8 +94,6 @@ def setup_xls_writer(xls_filename):
         logging.error('Could not load excel file!' + str(exception))
         sys.exit(1)
 
-    now = datetime.now() # current date and time
-    date_stamp = now.strftime("%m_%d_%Y__%H%M")
     return workbook
 
 """
@@ -119,23 +117,24 @@ def add_worksheet(workbook, item_name):
         worksheet.column_dimensions['F'].width = 20
 
         header_color = "00C0C0C0"
-        d = worksheet.cell(row=2, column=2, value="Name")
-        d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
-        d.alignment = Alignment(horizontal="center", vertical="center")
+        data = worksheet.cell(row=2, column=2, value="Name")
+        data.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
+        data.alignment = Alignment(horizontal="center", vertical="center")
 
-        d = worksheet.cell(row=3, column=2, value="Category")
-        d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
-        d.alignment = Alignment(horizontal="center", vertical="center")
-        
+        data = worksheet.cell(row=3, column=2, value="Category")
+        data.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
+        data.alignment = Alignment(horizontal="center", vertical="center")
+
         xls_headers = ['Date', 'Avg Price', 'Min Price', 'Max Price', 'Quantity']
 
         _row = 5
         col_adjust = 0
         for headers in xls_headers:
             #worksheet.write(row, col+col_adjust, headers, header_format)
-            d = worksheet.cell(row=_row, column=_col+col_adjust, value=headers)
-            d.alignment = Alignment(horizontal="center", vertical="center")
-            d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
+            data = worksheet.cell(row=_row, column=_col+col_adjust, value=headers)
+            data.alignment = Alignment(horizontal="center", vertical="center")
+            data.fill = PatternFill(start_color=header_color,
+                                    end_color=header_color, fill_type="solid")
             col_adjust += 1
 
     return worksheet
@@ -217,25 +216,25 @@ def main():
                                 break
                             else:
                                 logging.debug('Row contents: '+
-                                    worksheet.cell(row=index, column=2).value)
+                                              worksheet.cell(row=index, column=2).value)
 
                         print_details(res[key], key)
                         logging.debug(json.dumps(res, indent=4, sort_keys=True))
                         total += res[key]['avg']
 
-                        d = worksheet.cell(row=2, column=3, value=res[key]['name'])
-                        d.alignment = Alignment(horizontal="center", vertical="center")
-                        d = worksheet.cell(row=3, column=3, value=res[key]['category'])
-                        d.alignment = Alignment(horizontal="center", vertical="center")
-                        d = worksheet.cell(row=_row, column=_col, value=date_stamp)
-                        d = worksheet.cell(row=_row, column=_col+1, value=res[key]['avg'])
-                        d.alignment = Alignment(horizontal="center", vertical="center")
-                        d = worksheet.cell(row=_row, column=_col+2, value=res[key]['min'])
-                        d.alignment = Alignment(horizontal="center", vertical="center")
-                        d = worksheet.cell(row=_row, column=_col+3, value=res[key]['max'])
-                        d.alignment = Alignment(horizontal="center", vertical="center")
-                        d = worksheet.cell(row=_row, column=_col+4, value=res[key]['quantity'])
-                        d.alignment = Alignment(horizontal="center", vertical="center")
+                        data = worksheet.cell(row=2, column=3, value=res[key]['name'])
+                        data.alignment = Alignment(horizontal="center", vertical="center")
+                        data = worksheet.cell(row=3, column=3, value=res[key]['category'])
+                        data.alignment = Alignment(horizontal="center", vertical="center")
+                        data = worksheet.cell(row=_row, column=_col, value=date_stamp)
+                        data = worksheet.cell(row=_row, column=_col+1, value=res[key]['avg'])
+                        data.alignment = Alignment(horizontal="center", vertical="center")
+                        data = worksheet.cell(row=_row, column=_col+2, value=res[key]['min'])
+                        data.alignment = Alignment(horizontal="center", vertical="center")
+                        data = worksheet.cell(row=_row, column=_col+3, value=res[key]['max'])
+                        data.alignment = Alignment(horizontal="center", vertical="center")
+                        data = worksheet.cell(row=_row, column=_col+4, value=res[key]['quantity'])
+                        data.alignment = Alignment(horizontal="center", vertical="center")
 
                 logging.info("Total: " + str(total) + "USD")
 
@@ -248,13 +247,15 @@ def main():
                     summary.column_dimensions['C'].width = 20
 
                     header_color = "00C0C0C0"
-                    d = summary.cell(row=2, column=2, value="Date")
-                    d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
-                    d.alignment = Alignment(horizontal="center", vertical="center")
+                    data = summary.cell(row=2, column=2, value="Date")
+                    data.fill = PatternFill(start_color=header_color,
+                                            end_color=header_color, fill_type="solid")
+                    data.alignment = Alignment(horizontal="center", vertical="center")
 
-                    d = summary.cell(row=2, column=3, value="Total")
-                    d.fill = PatternFill(start_color=header_color, end_color=header_color, fill_type="solid")
-                    d.alignment = Alignment(horizontal="center", vertical="center")
+                    data = summary.cell(row=2, column=3, value="Total")
+                    data.fill = PatternFill(start_color=header_color,
+                                            end_color=header_color, fill_type="solid")
+                    data.alignment = Alignment(horizontal="center", vertical="center")
 
                 for index in range(3, 1000):
                     if summary.cell(row=index, column=2).value is None:
@@ -264,10 +265,10 @@ def main():
                     else:
                         logging.debug('Row contents: '+summary.cell(row=index, column=2).value)
 
-                d = summary.cell(row=_srow, column=2, value=date_stamp)
-                d.alignment = Alignment(horizontal="center", vertical="center")
-                d = summary.cell(row=_srow, column=3, value=total)
-                d.alignment = Alignment(horizontal="center", vertical="center")
+                data = summary.cell(row=_srow, column=2, value=date_stamp)
+                data.alignment = Alignment(horizontal="center", vertical="center")
+                data = summary.cell(row=_srow, column=3, value=total)
+                data.alignment = Alignment(horizontal="center", vertical="center")
         workbook.save(filename=xls_filename)
 
 if __name__ == '__main__':
