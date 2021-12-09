@@ -46,6 +46,9 @@ def main():
     parser.add_argument('-v', '--verbose', action="store_true")
     args = parser.parse_args()
 
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     logging.info('Read configuration')
     config = configparser.ConfigParser()
     config.read('config.ini')
@@ -87,38 +90,44 @@ def main():
         logging.info("Condition: " + str(condition))
         description = worksheet.cell(row=index, column=12).value
         logging.info("Description: " + str(description))
-        stockroom = worksheet.cell(row=index, column=16).value
+        stockroom = worksheet.cell(row=index, column=15).value
         logging.info("Stockroom: " + str(stockroom))
-        stockroom_id = worksheet.cell(row=index, column=17).value
+        remark = worksheet.cell(row=index, column=14).value
+        logging.info("Remark: " + str(remark))
+        stockroom_id = worksheet.cell(row=index, column=16).value
         logging.info("Stockroom Id: " + str(stockroom_id))
-        retain = worksheet.cell(row=index, column=18).value
+        retain = worksheet.cell(row=index, column=17).value
         logging.info("Stockroom Id: " + str(retain))
 
         # Call Bricklink API
         inventory_item = {}
         inventory_item['item'] = {}
-        inventory_item['item']['type'] = 'PART'
+        inventory_item['item']['type'] = item_type
         inventory_item['item']['no'] = item_num
-        inventory_item['color_id'] = '1'
+        inventory_item['color_id'] = color
         inventory_item['unit_price'] = price
-        inventory_item['quantity'] = quantity
+        
         inventory_item['new_or_used'] = condition
         inventory_item['description'] = description
-        inventory_item['is_stock_room'] = 'true'
+        inventory_item['is_stock_room'] = stockroom
         inventory_item['stock_room_id'] = stockroom_id
-        inventory_item['is_retain'] = 'true'
+        inventory_item['is_retain'] = retain
+        inventory_item['remarks'] = remark
         logging.debug(inventory_item)
 
         if inventory_id == 0:
+            inventory_item['quantity'] = quantity
             logging.info('Creating Inventory Item')
             response = create_inventory(inventory_item, auth=auth)
+            logging.debug(response)
             inventory_id = response['data']['inventory_id']
+            worksheet.cell(row=index, column=2).value = inventory_id
         else:
             logging.info('Updating Inventory Item')
             response = update_inventory(inventory_id, inventory_item, auth=auth)
+            logging.debug(response)
 
-        logging.debug(response)
-        worksheet.cell(row=index, column=2).value = inventory_id
+        
 
         index += 1
     workbook.save(filename='LegoParts.xlsx')
