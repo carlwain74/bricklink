@@ -11,7 +11,7 @@ from os.path import exists
 from bricklink_api.auth import oauth
 from bricklink_api.catalog_item import get_price_guide, get_item, get_item_image, Type, NewOrUsed
 from bricklink_api.category import get_category
-from bricklink_api.user_inventory import create_inventory, update_inventory
+from bricklink_api.user_inventory import get_inventory, create_inventory, update_inventory
 from bricklink_api.color import get_color_list
 import html
 from html.parser import HTMLParser
@@ -124,10 +124,27 @@ def main():
             worksheet.cell(row=index, column=2).value = inventory_id
         else:
             logging.info('Updating Inventory Item')
-            response = update_inventory(inventory_id, inventory_item, auth=auth)
-            logging.debug(response)
 
-        
+            # Get current online inventory quantities
+            curr = get_inventory(inventory_id, auth=auth)
+            logging.debug(curr)
+            curr_quantity = curr['data']['quantity']
+
+            # Update new quantity
+            if curr_quantity > quantity:
+                logging.info('Reduce quantity in BL' + str(curr_quantity - quantity))
+                inventory_item['quantity'] = curr_quantity - quantity
+            if quantity < curr_quantity:
+                logging.info('Increase quantity in BL by ' + str(quantity - curr_quantity))
+                inventory_item['quantity'] = quantity - curr_quantity
+            else:
+                logging.info('No change in quantity')
+                inventory_item['quantity'] = 0
+
+            if inventory_item['quantity'] != 0:
+                logging.debug(inventory_item)
+                response = update_inventory(inventory_id, inventory_item, auth=auth)
+                logging.debug(response)
 
         index += 1
     workbook.save(filename='LegoParts.xlsx')
