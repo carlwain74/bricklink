@@ -27,6 +27,50 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S')
 
 """
+Grab Color from loopup table
+"""
+def getColorName(colorId):
+    pass
+
+"""
+This calls the API functions to get the data.
+"""
+def getPartDetails(number, auth_params):
+    logging.debug("Getting details for " + str(number))
+    h_parse = html.parser
+
+    json_obj = get_price_guide(Type.PART, number, new_or_used=NewOrUsed.USED, \
+                               country_code="US", region="north_america", auth=auth_params)
+
+    logging.debug(json.dumps(json_obj, indent=4, sort_keys=True))
+    meta = json_obj['meta']
+
+    if meta['code'] == 200:
+        data = json_obj['data']
+
+        type_data = get_item(Type.PART, number, auth=auth_params)
+        logging.debug(json.dumps(type_data, indent=4, sort_keys=True))
+
+        category_data = get_category(type_data['data']['category_id'], auth=auth_params)
+        logging.debug(json.dumps(category_data, indent=4, sort_keys=True))
+
+        elem_data = {}
+        elem_data[number] = {}
+        elem_data[number]['name'] = h_parse.unescape(type_data['data']['name'])
+        elem_data[number]['category'] = h_parse.unescape(category_data['data']['category_name'])
+        elem_data[number]['avg'] = float(data['avg_price'])
+        elem_data[number]['max'] = float(data['max_price'])
+        elem_data[number]['min'] = float(data['min_price'])
+        elem_data[number]['quantity'] = data['unit_quantity']
+        elem_data[number]['currency'] = data['currency_code']
+
+        return elem_data
+    else:
+        logging.warning("API Error!! " + str(meta['code']))
+        logging.warning("API Message!! " + str(meta['message']))
+        return 0
+
+"""
 Open inventory workbook
 """
 def setup_xls_writer(xls_filename):
@@ -44,6 +88,8 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', action="store_true")
+    parser.add_argument('-s', '--skip', action="store_true")
+    parser.add_argument('-d', '--dryrun', action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
@@ -53,6 +99,16 @@ def main():
     config = configparser.ConfigParser()
     config.read('config.ini')
 
+    # Read color conversion data
+    try:
+        with open('colors.json') as configData:
+            configData = json.load(configData)
+            # Process dict
+            logging.debug(json.dumps(configData, indent=4, sort_keys=True))
+    except IOError as e:
+        logging.critical("Could not open: " + args.config)
+        sys.exit(2)
+    
     # fill in with your data from https://www.bricklink.com/v2/api/register_consumer.page
     consumer_key = config['secrets']['consumer_key']
     consumer_secret = config['secrets']['consumer_secret']
@@ -67,38 +123,49 @@ def main():
 
     workbook = setup_xls_writer('LegoParts.xlsx')
 
-    worksheet = workbook['Sheet1']
+    worksheet = workbook['Inventory']
     index = 4
     while worksheet.cell(row=index, column=3).value is not None:
+        logging.debug('Column Index: ' + str(index))
+        
         # Check if there is an inventory id
         if worksheet.cell(row=index, column=2).value is not None:
             inventory_id = worksheet.cell(row=index, column=2).value
-            logging.info("Inventory Id: " + str(inventory_id))
+            logging.info("Entry has Inventory Id: " + str(inventory_id))
+            
+            if args.skip:
+                index += 1
+                continue
         else:
             inventory_id = 0
-        item_type = worksheet.cell(row=index, column=3).value
-        logging.info("Item Type: " + str(item_type))
-        item_num = worksheet.cell(row=index, column=4).value
-        logging.info("Item Num: " + str(item_num))
-        color = worksheet.cell(row=index, column=6).value
-        logging.info("Color: " + str(color))
-        price = worksheet.cell(row=index, column=7).value
-        logging.info("Price: " + str(price))
-        quantity = worksheet.cell(row=index, column=8).value
-        logging.info("Quantity: " + str(quantity))
-        condition = worksheet.cell(row=index, column=9).value
-        logging.info("Condition: " + str(condition))
-        description = worksheet.cell(row=index, column=12).value
-        logging.info("Description: " + str(description))
-        stockroom = worksheet.cell(row=index, column=15).value
-        logging.info("Stockroom: " + str(stockroom))
-        remark = worksheet.cell(row=index, column=14).value
-        logging.info("Remark: " + str(remark))
-        stockroom_id = worksheet.cell(row=index, column=16).value
-        logging.info("Stockroom Id: " + str(stockroom_id))
-        retain = worksheet.cell(row=index, column=17).value
-        logging.info("Stockroom Id: " + str(retain))
 
+        item_type = worksheet.cell(row=index, column=3).value
+        logging.info('Processing: '+ str(item_type))
+        item_num = worksheet.cell(row=index, column=4).value
+        logging.info("  Item Num: " + str(item_num))
+        color = worksheet.cell(row=index, column=6).value
+        logging.info("  Color: " + str(color))
+        price = worksheet.cell(row=index, column=7).value
+        logging.info("  Price: " + str(price))
+        quantity = worksheet.cell(row=index, column=8).value
+        logging.info("  Quantity: " + str(quantity))
+        condition = worksheet.cell(row=index, column=9).value
+        logging.debug("  Condition: " + str(condition))
+        description = worksheet.cell(row=index, column=12).value
+        logging.debug("  Description: " + str(description))
+        stockroom = worksheet.cell(row=index, column=15).value
+        logging.debug("  Stockroom: " + str(stockroom))
+        remark = worksheet.cell(row=index, column=14).value
+        logging.debug("  Remark: " + str(remark))
+        stockroom_id = worksheet.cell(row=index, column=16).value
+        logging.debug("  Stockroom Id: " + str(stockroom_id))
+        retain = worksheet.cell(row=index, column=17).value
+        logging.debug("  Stockroom Id: " + str(retain))
+
+        if item_num is None:
+            index += 1
+            continue
+            
         # Call Bricklink API
         inventory_item = {}
         inventory_item['item'] = {}
@@ -112,19 +179,54 @@ def main():
         inventory_item['is_stock_room'] = stockroom
         inventory_item['stock_room_id'] = stockroom_id
         inventory_item['is_retain'] = retain
-        inventory_item['remarks'] = remark
-        logging.debug(inventory_item)
+        inventory_item['remarks'] = configData[str(color)]['Name']
+        logging.debug(json.dumps(inventory_item, indent=4, sort_keys=True))
 
         if inventory_id == 0:
-            inventory_item['quantity'] = quantity
             logging.info('Creating Inventory Item')
-            response = create_inventory(inventory_item, auth=auth)
-            logging.debug(response)
-            inventory_id = response['data']['inventory_id']
-            worksheet.cell(row=index, column=2).value = inventory_id
+            # Get price details
+            try:
+                details = getPartDetails(item_num, auth)
+                if price is None:
+                    logging.debug(details)
+                    inventory_item['unit_price'] = details[item_num]['avg']
+                    if not args.dryrun:
+                        worksheet.cell(row=index, column=7).value = details[item_num]['avg']
+                if not args.dryrun:
+                    worksheet.cell(row=index, column=24).value = details[item_num]['name']
+                inventory_item['quantity'] = quantity
+            except Exception as e:
+                logging.warning('Could not get pricing details for ' + str(item_num))
+                logging.warning(details)
+                index += 1
+                continue
+            if not args.dryrun:
+                try:
+                    response = create_inventory(inventory_item, auth=auth)
+                    logging.debug(response)
+                    inventory_id = response['data']['inventory_id']
+                    unit_price = response['data']['unit_price']
+                    logging.info('  Inventory Id: ' + str(inventory_id))
+                    logging.info('  Unit Price: ' + str(unit_price))
+                    worksheet.cell(row=index, column=2).value = inventory_id
+                except Exception as error:
+                    logging.warning('  Could not create inventory for '+ item_num)
+                    logging.warning(response)
+                    index += 1
+                    continue       
         else:
             logging.info('Updating Inventory Item')
 
+            try:
+                details = getPartDetails(item_num, auth)
+                if not args.dryrun:
+                    worksheet.cell(row=index, column=24).value = details[item_num]['name']
+                    worksheet.cell(row=index, column=7).value = details[item_num]['avg']
+            except Exception as e:
+                logging.warning('  Could not get pricing details for ' + str(item_num))
+                logging.warning(details)
+                index += 1
+                continue
             # Get current online inventory quantities
             curr = get_inventory(inventory_id, auth=auth)
             logging.debug(curr)
@@ -132,22 +234,24 @@ def main():
 
             # Update new quantity
             if curr_quantity > quantity:
-                logging.info('Reduce quantity in BL' + str(curr_quantity - quantity))
+                logging.info('  Reduce quantity in BL' + str(curr_quantity - quantity))
                 inventory_item['quantity'] = curr_quantity - quantity
             if quantity < curr_quantity:
-                logging.info('Increase quantity in BL by ' + str(quantity - curr_quantity))
+                logging.info('   Increase quantity in BL by ' + str(quantity - curr_quantity))
                 inventory_item['quantity'] = quantity - curr_quantity
             else:
-                logging.info('No change in quantity')
-                inventory_item['quantity'] = 0
+                logging.info('  No change in quantity')
 
-            if inventory_item['quantity'] != 0:
-                logging.debug(inventory_item)
+            logging.debug(inventory_item)
+            if not args.dryrun:
                 response = update_inventory(inventory_id, inventory_item, auth=auth)
                 logging.debug(response)
+            else:
+                logging.info('## Dry Run mode: no changes applied to Bricklink inventory ##')
 
         index += 1
-    workbook.save(filename='LegoParts.xlsx')
+    if not args.dryrun:
+        workbook.save(filename='LegoParts.xlsx')
 
 
 if __name__ == '__main__':
