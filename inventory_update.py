@@ -131,7 +131,7 @@ def main():
         # Check if there is an inventory id
         if worksheet.cell(row=index, column=2).value is not None:
             inventory_id = worksheet.cell(row=index, column=2).value
-            logging.info("Entry has Inventory Id: " + str(inventory_id))
+            logging.debug("Entry has Inventory Id: " + str(inventory_id))
             
             if args.skip:
                 index += 1
@@ -140,6 +140,7 @@ def main():
             inventory_id = 0
 
         item_type = worksheet.cell(row=index, column=3).value
+        logging.info('')
         logging.info('Processing: '+ str(item_type))
         item_num = worksheet.cell(row=index, column=4).value
         logging.info("  Item Num: " + str(item_num))
@@ -192,6 +193,8 @@ def main():
                     inventory_item['unit_price'] = details[item_num]['avg']
                     if not args.dryrun:
                         worksheet.cell(row=index, column=7).value = details[item_num]['avg']
+                    else:
+                        logging.info('  Avg Unit Price: ' + str(inventory_item['unit_price']))
                 if not args.dryrun:
                     worksheet.cell(row=index, column=24).value = details[item_num]['name']
                 inventory_item['quantity'] = quantity
@@ -207,7 +210,7 @@ def main():
                     inventory_id = response['data']['inventory_id']
                     unit_price = response['data']['unit_price']
                     logging.info('  Inventory Id: ' + str(inventory_id))
-                    logging.info('  Unit Price: ' + str(unit_price))
+                    logging.info('  Avg Unit Price: ' + str(unit_price))
                     worksheet.cell(row=index, column=2).value = inventory_id
                 except Exception as error:
                     logging.warning('  Could not create inventory for '+ item_num)
