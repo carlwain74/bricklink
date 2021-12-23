@@ -1,0 +1,557 @@
+{
+   "1": {
+      "Name": "White"
+   },
+   "2": {
+      "Name": "Tan"
+   },
+   "3": {
+      "Name": "Yellow"
+   },
+   "4": {
+      "Name": "Orange"
+   },
+   "5": {
+      "Name": "Red"
+   },
+   "6": {
+      "Name": "Green"
+   },
+   "7": {
+      "Name": "Blue"
+   },
+   "8": {
+      "Name": "Brown"
+   },
+   "9": {
+      "Name": "Light Gray"
+   },
+   "10": {
+      "Name": "Dark Gray"
+   },
+   "11": {
+      "Name": "Black"
+   },
+   "12": {
+      "Name": "Trans-Clear"
+   },
+   "13": {
+      "Name": "Trans-Black"
+   },
+   "14": {
+      "Name": "Trans-Dark Blue"
+   },
+   "15": {
+      "Name": "Trans-Light Blue"
+   },
+   "16": {
+      "Name": "Trans-Neon Green"
+   },
+   "17": {
+      "Name": "Trans-Red"
+   },
+   "18": {
+      "Name": "Trans-Neon Orange"
+   },
+   "19": {
+      "Name": "Trans-Yellow"
+   },
+   "20": {
+      "Name": "Trans-Green"
+   },
+   "21": {
+      "Name": "Chrome Gold"
+   },
+   "22": {
+      "Name": "Chrome Silver"
+   },
+   "23": {
+      "Name": "Pink"
+   },
+   "24": {
+      "Name": "Purple"
+   },
+   "25": {
+      "Name": "Salmon"
+   },
+   "26": {
+      "Name": "Light Salmon"
+   },
+   "27": {
+      "Name": "Rust"
+   },
+   "28": {
+      "Name": "Nougat"
+   },
+   "29": {
+      "Name": "Earth Orange"
+   },
+   "31": {
+      "Name": "Medium Orange"
+   },
+   "32": {
+      "Name": "Light Orange"
+   },
+   "33": {
+      "Name": "Light Yellow"
+   },
+   "34": {
+      "Name": "Lime"
+   },
+   "35": {
+      "Name": "Light Lime"
+   },
+   "36": {
+      "Name": "Bright Green"
+   },
+   "37": {
+      "Name": "Medium Green"
+   },
+   "38": {
+      "Name": "Light Green"
+   },
+   "39": {
+      "Name": "Dark Turquoise"
+   },
+   "40": {
+      "Name": "Light Turquoise"
+   },
+   "41": {
+      "Name": "Aqua"
+   },
+   "42": {
+      "Name": "Medium Blue"
+   },
+   "43": {
+      "Name": "Violet"
+   },
+   "44": {
+      "Name": "Light Violet"
+   },
+   "46": {
+      "Name": "Glow In Dark Opaque"
+   },
+   "47": {
+      "Name": "Dark Pink"
+   },
+   "48": {
+      "Name": "Sand Green"
+   },
+   "49": {
+      "Name": "Very Light Gray"
+   },
+   "50": {
+      "Name": "Trans-Dark Pink"
+   },
+   "51": {
+      "Name": "Trans-Purple"
+   },
+   "52": {
+      "Name": "Chrome Blue"
+   },
+   "54": {
+      "Name": "Sand Purple"
+   },
+   "55": {
+      "Name": "Sand Blue"
+   },
+   "56": {
+      "Name": "Light Pink"
+   },
+   "57": {
+      "Name": "Chrome Antique Brass"
+   },
+   "58": {
+      "Name": "Sand Red"
+   },
+   "59": {
+      "Name": "Dark Red"
+   },
+   "60": {
+      "Name": "Milky White"
+   },
+   "61": {
+      "Name": "Pearl Light Gold"
+   },
+   "62": {
+      "Name": "Light Blue"
+   },
+   "63": {
+      "Name": "Dark Blue"
+   },
+   "64": {
+      "Name": "Chrome Green"
+   },
+   "65": {
+      "Name": "Metallic Gold"
+   },
+   "66": {
+      "Name": "Pearl Light Gray"
+   },
+   "67": {
+      "Name": "Metallic Silver"
+   },
+   "68": {
+      "Name": "Dark Orange"
+   },
+   "69": {
+      "Name": "Dark Tan"
+   },
+   "70": {
+      "Name": "Metallic Green"
+   },
+   "71": {
+      "Name": "Magenta"
+   },
+   "72": {
+      "Name": "Maersk Blue"
+   },
+   "73": {
+      "Name": "Medium Violet"
+   },
+   "74": {
+      "Name": "Trans-Medium Blue"
+   },
+   "76": {
+      "Name": "Medium Lime"
+   },
+   "77": {
+      "Name": "Pearl Dark Gray"
+   },
+   "78": {
+      "Name": "Metal Blue"
+   },
+   "80": {
+      "Name": "Dark Green"
+   },
+   "81": {
+      "Name": "Flat Dark Gold"
+   },
+   "82": {
+      "Name": "Chrome Pink"
+   },
+   "83": {
+      "Name": "Pearl White"
+   },
+   "84": {
+      "Name": "Copper"
+   },
+   "85": {
+      "Name": "Dark Bluish Gray"
+   },
+   "86": {
+      "Name": "Light Bluish Gray"
+   },
+   "87": {
+      "Name": "Sky Blue"
+   },
+   "88": {
+      "Name": "Reddish Brown"
+   },
+   "89": {
+      "Name": "Dark Purple"
+   },
+   "90": {
+      "Name": "Light Nougat"
+   },
+   "91": {
+      "Name": "Medium Brown"
+   },
+   "93": {
+      "Name": "Light Purple"
+   },
+   "94": {
+      "Name": "Medium Dark Pink"
+   },
+   "95": {
+      "Name": "Flat Silver"
+   },
+   "96": {
+      "Name": "Very Light Orange"
+   },
+   "97": {
+      "Name": "Blue-Violet"
+   },
+   "98": {
+      "Name": "Trans-Orange"
+   },
+   "99": {
+      "Name": "Very Light Bluish Gray"
+   },
+   "100": {
+      "Name": "Glitter Trans-Dark Pink"
+   },
+   "101": {
+      "Name": "Glitter Trans-Clear"
+   },
+   "102": {
+      "Name": "Glitter Trans-Purple"
+   },
+   "103": {
+      "Name": "Bright Light Yellow"
+   },
+   "104": {
+      "Name": "Bright Pink"
+   },
+   "105": {
+      "Name": "Bright Light Blue"
+   },
+   "106": {
+      "Name": "Fabuland Brown"
+   },
+   "107": {
+      "Name": "Trans-Pink"
+   },
+   "108": {
+      "Name": "Trans-Bright Green"
+   },
+   "109": {
+      "Name": "Dark Blue-Violet"
+   },
+   "110": {
+      "Name": "Bright Light Orange"
+   },
+   "111": {
+      "Name": "Speckle Black-Silver"
+   },
+   "113": {
+      "Name": "Trans-Aqua"
+   },
+   "114": {
+      "Name": "Trans-Light Purple"
+   },
+   "115": {
+      "Name": "Pearl Gold"
+   },
+   "116": {
+      "Name": "Speckle Black-Copper"
+   },
+   "117": {
+      "Name": "Speckle DBGray-Silver"
+   },
+   "118": {
+      "Name": "Glow In Dark Trans"
+   },
+   "119": {
+      "Name": "Pearl Very Light Gray"
+   },
+   "120": {
+      "Name": "Dark Brown"
+   },
+   "121": {
+      "Name": "Trans-Neon Yellow"
+   },
+   "122": {
+      "Name": "Chrome Black"
+   },
+   "123": {
+      "Name": "Mx White"
+   },
+   "124": {
+      "Name": "Mx Light Bluish Gray"
+   },
+   "125": {
+      "Name": "Mx Light Gray"
+   },
+   "126": {
+      "Name": "Mx Charcoal Gray"
+   },
+   "127": {
+      "Name": "Mx Tile Gray"
+   },
+   "128": {
+      "Name": "Mx Black"
+   },
+   "129": {
+      "Name": "Mx Red"
+   },
+   "130": {
+      "Name": "Mx Pink Red"
+   },
+   "131": {
+      "Name": "Mx Tile Brown"
+   },
+   "132": {
+      "Name": "Mx Brown"
+   },
+   "133": {
+      "Name": "Mx Buff"
+   },
+   "134": {
+      "Name": "Mx Terracotta"
+   },
+   "135": {
+      "Name": "Mx Orange"
+   },
+   "136": {
+      "Name": "Mx Light Orange"
+   },
+   "137": {
+      "Name": "Mx Light Yellow"
+   },
+   "138": {
+      "Name": "Mx Ochre Yellow"
+   },
+   "139": {
+      "Name": "Mx Lemon"
+   },
+   "140": {
+      "Name": "Mx Olive Green"
+   },
+   "141": {
+      "Name": "Mx Pastel Green"
+   },
+   "142": {
+      "Name": "Mx Aqua Green"
+   },
+   "143": {
+      "Name": "Mx Tile Blue"
+   },
+   "144": {
+      "Name": "Mx Medium Blue"
+   },
+   "145": {
+      "Name": "Mx Pastel Blue"
+   },
+   "146": {
+      "Name": "Mx Teal Blue"
+   },
+   "147": {
+      "Name": "Mx Violet"
+   },
+   "148": {
+      "Name": "Mx Pink"
+   },
+   "149": {
+      "Name": "Mx Clear"
+   },
+   "150": {
+      "Name": "Medium Nougat"
+   },
+   "151": {
+      "Name": "Speckle Black-Gold"
+   },
+   "152": {
+      "Name": "Light Aqua"
+   },
+   "153": {
+      "Name": "Dark Azure"
+   },
+   "154": {
+      "Name": "Lavender"
+   },
+   "155": {
+      "Name": "Olive Green"
+   },
+   "156": {
+      "Name": "Medium Azure"
+   },
+   "157": {
+      "Name": "Medium Lavender"
+   },
+   "158": {
+      "Name": "Yellowish Green"
+   },
+   "159": {
+      "Name": "Glow In Dark White"
+   },
+   "160": {
+      "Name": "Fabuland Orange"
+   },
+   "161": {
+      "Name": "Dark Yellow"
+   },
+   "162": {
+      "Name": "Glitter Trans-Light Blue"
+   },
+   "163": {
+      "Name": "Glitter Trans-Neon Green"
+   },
+   "164": {
+      "Name": "Trans-Light Orange"
+   },
+   "165": {
+      "Name": "Neon Orange"
+   },
+   "166": {
+      "Name": "Neon Green"
+   },
+   "210": {
+      "Name": "Mx Foil Dark Gray"
+   },
+   "211": {
+      "Name": "Mx Foil Light Gray"
+   },
+   "212": {
+      "Name": "Mx Foil Dark Green"
+   },
+   "213": {
+      "Name": "Mx Foil Light Green"
+   },
+   "214": {
+      "Name": "Mx Foil Dark Blue"
+   },
+   "215": {
+      "Name": "Mx Foil Light Blue"
+   },
+   "216": {
+      "Name": "Mx Foil Violet"
+   },
+   "217": {
+      "Name": "Mx Foil Red"
+   },
+   "218": {
+      "Name": "Mx Foil Yellow"
+   },
+   "219": {
+      "Name": "Mx Foil Orange"
+   },
+   "220": {
+      "Name": "Coral"
+   },
+   "221": {
+      "Name": "Trans-Light Green"
+   },
+   "222": {
+      "Name": "Glitter Trans-Orange"
+   },
+   "223": {
+      "Name": "Satin Trans-Light Blue"
+   },
+   "224": {
+      "Name": "Satin Trans-Dark Pink"
+   },
+   "225": {
+      "Name": "Dark Nougat"
+   },
+   "226": {
+      "Name": "Trans-Light Bright Green"
+   },
+   "227": {
+      "Name": "Clikits Lavender"
+   },
+   "228": {
+      "Name": "Satin White"
+   },
+   "229": {
+      "Name": "Satin Trans-Black"
+   },
+   "230": {
+      "Name": "Satin Trans-Purple"
+   },
+   "231": {
+      "Name": "Dark Salmon"
+   },
+   "232": {
+      "Name": "Satin Trans-Dark Blue"
+   },
+   "233": {
+      "Name": "Satin Trans-Bright Green"
+   },
+   "234": {
+      "Name": "Trans-Medium Purple"
+   },
+   "235": {
+      "Name": "Reddish Gold"
+   }
+}
