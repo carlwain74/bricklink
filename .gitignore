@@ -2,3 +2,5 @@
 *.list
 *.numbers
 venv*
+config_*
+
