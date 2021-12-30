@@ -142,6 +142,8 @@ def main():
         item_type = worksheet.cell(row=index, column=3).value
         logging.info('')
         logging.info('Processing: '+ str(item_type))
+        if inventory_id:
+            logging.info("  Inventory Id: " + str(inventory_id))
         item_num = worksheet.cell(row=index, column=4).value
         logging.info("  Item Num: " + str(item_num))
         color = worksheet.cell(row=index, column=6).value
@@ -164,6 +166,17 @@ def main():
         logging.debug("  Stockroom Id: " + str(retain))
 
         if item_num is None:
+            index += 1
+            logging.info('Empty row!!')
+            continue
+
+        if quantity == 0 or quantity is None:
+            logging.warning('No quantity provided or it\'s zero')
+            index += 1
+            continue
+
+        if color == 0 or color is None:
+            logging.warning('No color provided or it\'s zero')
             index += 1
             continue
             
@@ -217,6 +230,8 @@ def main():
                     logging.warning(response)
                     index += 1
                     continue       
+            else:
+                logging.info('  ## Dry Run mode: no changes applied to Bricklink inventory ##')
         else:
             logging.info('Updating Inventory Item')
 
@@ -225,6 +240,15 @@ def main():
                 if not args.dryrun:
                     worksheet.cell(row=index, column=24).value = details[item_num]['name']
                     worksheet.cell(row=index, column=7).value = details[item_num]['avg']
+                else:
+                    logging.info('  Latest average price is ' + str(details[item_num]['avg']))
+                    if details[item_num]['avg'] > inventory_item['unit_price']:
+                        logging.info('  Price has increased')
+                    elif details[item_num]['avg'] < inventory_item['unit_price']:
+                        logging.info('  Price has decreased')
+                    else:
+                        logging.info('  Price has not changed')
+
             except Exception as e:
                 logging.warning('  Could not get pricing details for ' + str(item_num))
                 logging.warning(details)
@@ -239,18 +263,24 @@ def main():
             if curr_quantity > quantity:
                 logging.info('  Reduce quantity in BL' + str(curr_quantity - quantity))
                 inventory_item['quantity'] = curr_quantity - quantity
-            if quantity < curr_quantity:
-                logging.info('   Increase quantity in BL by ' + str(quantity - curr_quantity))
+            if curr_quantity < quantity:
+                logging.info('  Increase quantity in BL by ' + str(quantity - curr_quantity))
                 inventory_item['quantity'] = quantity - curr_quantity
             else:
                 logging.info('  No change in quantity')
+
+            if args.dryrun:
+                #logging.info(type(curr_quantity))
+                #logging.info(type(quantity))
+                logging.info('  Bricklink quantity: ' + str(curr_quantity))
+                logging.info('  Spreadsheet quantity: ' + str(quantity))
 
             logging.debug(inventory_item)
             if not args.dryrun:
                 response = update_inventory(inventory_id, inventory_item, auth=auth)
                 logging.debug(response)
             else:
-                logging.info('## Dry Run mode: no changes applied to Bricklink inventory ##')
+                logging.info('  ## Dry Run mode: no changes applied to Bricklink inventory ##')
 
         index += 1
     if not args.dryrun:
