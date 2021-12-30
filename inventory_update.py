@@ -261,11 +261,15 @@ def main():
 
             # Update new quantity
             if curr_quantity > quantity:
-                logging.info('  Reduce quantity in BL' + str(curr_quantity - quantity))
-                inventory_item['quantity'] = curr_quantity - quantity
+                delta = curr_quantity - quantity
+                logging.info('  Increase quantity in spreadsheet by ' + str(delta))
+                inventory_item['quantity'] = delta
+                if not args.dryrun:
+                    worksheet.cell(row=index, column=8).value += delta
             if curr_quantity < quantity:
-                logging.info('  Increase quantity in BL by ' + str(quantity - curr_quantity))
-                inventory_item['quantity'] = quantity - curr_quantity
+                delta = quantity - curr_quantity
+                logging.info('  Increase quantity in Bricklink by ' + str(delta))
+                inventory_item['quantity'] = delta
             else:
                 logging.info('  No change in quantity')
 
