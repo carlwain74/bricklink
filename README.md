@@ -52,7 +52,7 @@ There are two modes; Printing details about a single set `-s` or multiple sets `
 Single set option will take presedence over multiple sets
 
 ```
-usage: get_set.py [-h] [-s SET] [-f FILE] [-v]
+usage: generate_set_sheet.py [-h] [-s SET] [-f FILE] [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -63,7 +63,7 @@ optional arguments:
 ### Single set
 
 ```
-python get_set.py -s 40158
+python generate_set_sheet.py -s 40158
 2021-11-11 19:16:48 INFO     Item: 40158
 2021-11-11 19:16:48 INFO       Name: Pirates Chess Set, Pirates III
 2021-11-11 19:16:48 INFO       Category: Game
@@ -82,7 +82,7 @@ You need to create a text file with a list of sets as follows. Script will gener
 ```
 Then include the filename instead of a set.
 ```
-python get_set.py -f test.txt
+pipenv run python generate_set_sheet.py -f test.txt
 2021-11-11 19:18:42 INFO     Processing sets in test.txt
 2021-11-11 19:18:44 INFO     Item: 21036-1
 2021-11-11 19:18:44 INFO       Name: Arc De Triomphe

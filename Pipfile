@@ -9,7 +9,6 @@ pytest = "*"
 [packages]
 bricklink-py = "*"
 openpyxl = "*"
-XlsxWriter = "*"
 
 [requires]
 python_version = "3.11"
