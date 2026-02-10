@@ -20,20 +20,21 @@ source env/bin/activate
 
 Setup virtual env based on which version of Excel package you wish to make use of.
 
-### XlsWriter
 ```
-python3 -m pip install -r requirements_xlswriter.txt
-```
-### OpenPyXl
-```
-python3 -m pip install -r requirements_openpyxl.txt
+pipenv lock
+pipenv sync --dev
 ```
 
 ## Configuration File
 
-The file `config.ini` needs to be populated.
+The file `config.ini` needs to be exist and be populated.
 
 Head over to https://www.bricklink.com/v2/api/register_consumer.page where you can create a bricklink account and setup your API access.
+
+Make a copy of config.ini.template
+```
+cp config.ini.template config.ini
+```
 
 Populate the file as follows after the the Access Token has been created for the allowedIP.
 ```
