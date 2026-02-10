@@ -2,7 +2,7 @@
 Utilities for collecting data from Bricklink using their API
 
 ## Requirements
-- Python3
+- Python3.13
 
 ## Packages
 - XlsWriter (Used by get_set.py)
@@ -18,7 +18,7 @@ python3 -m venv env
 source env/bin/activate
 ```
 
-Setup virtual env based on which version of Xls package you wish to make use of.
+Setup virtual env based on which version of Excel package you wish to make use of.
 
 ### XlsWriter
 ```

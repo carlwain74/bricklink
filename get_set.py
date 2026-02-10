@@ -7,9 +7,13 @@ import sys
 import logging
 from os import stat
 from os.path import exists
-from bricklink_api.auth import oauth
-from bricklink_api.catalog_item import get_price_guide, get_item, get_item_image, Type, NewOrUsed
-from bricklink_api.category import get_category
+#from bricklink_api.auth import oauth
+#from bricklink_api.catalog_item import get_price_guide, get_item, get_item_image, Type, NewOrUsed
+#from bricklink_api.category import get_category
+
+from bricklink_py import Bricklink
+
+
 import html
 from html.parser import HTMLParser
 import xlsxwriter
@@ -24,49 +28,50 @@ logging.basicConfig(
 """
 This calls the API functions to get the data.
 """
-def getDetails(set_number, auth_params):
+def getDetails(session, set_number):
     logging.debug("Getting details for " + str(set_number))
     h_parse = html.parser
 
     if set_number == "40158":
-        item_type = Type.GEAR
+        item_type = "GEAR"
     else:
-        item_type = Type.SET
+        item_type = "SET"
 
-    json_obj = get_price_guide(item_type, set_number, new_or_used=NewOrUsed.NEW, \
-                               country_code="US", region="north_america", auth=auth_params)
+    try:
+        current_items = session.catalog_item.get_price_guide(item_type, set_number, new_or_used="N",
+                                                             country_code="US", region="north_america")
 
-    logging.debug(json.dumps(json_obj, indent=4, sort_keys=True))
-    meta = json_obj['meta']
+        past_sales = session.catalog_item.get_price_guide(item_type, set_number, new_or_used="N", \
+                                                          guide_type="sold", country_code="US", region="north_america")
+    except Exception as e:
+        logging.exception("Failed to get price guide for item" + str(e))
+        sys.exit()
 
-    if meta['code'] == 200:
-        data = json_obj['data']
-        #print("Core Data")
-        #print(data)
-        #print("Meta Data")
-        #print(meta)
+    logging.debug(json.dumps(current_items, indent=4, sort_keys=True))
+    logging.debug(json.dumps(past_sales, indent=4, sort_keys=True))
 
-        type_data = get_item(item_type, set_number, auth=auth_params)
-        logging.debug(json.dumps(type_data, indent=4, sort_keys=True))
+    # 
 
-        category_data = get_category(type_data['data']['category_id'], auth=auth_params)
-        logging.debug(json.dumps(category_data, indent=4, sort_keys=True))
+    type_data = session.catalog_item.get_item(item_type, set_number)
 
-        elem_data = {}
-        elem_data[set_number] = {}
-        elem_data[set_number]['name'] = h_parse.unescape(type_data['data']['name'])
-        elem_data[set_number]['category'] = h_parse.unescape(category_data['data']['category_name'])
-        elem_data[set_number]['avg'] = round(int(float(data['avg_price'])))
-        elem_data[set_number]['max'] = round(int(float(data['max_price'])))
-        elem_data[set_number]['min'] = round(int(float(data['min_price'])))
-        elem_data[set_number]['quantity'] = data['unit_quantity']
-        elem_data[set_number]['currency'] = data['currency_code']
+    logging.debug(json.dumps(type_data, indent=4, sort_keys=True))
 
-        return elem_data
-    else:
-        logging.warning("API Error!! " + str(meta['code']))
-        logging.warning("API Message!! " + str(meta['message']))
-        return 0
+    category_data = session.category.get_category(type_data['category_id'])
+    logging.debug(json.dumps(category_data, indent=4, sort_keys=True))
+
+    elem_data = {}
+    elem_data[set_number] = {}
+    elem_data[set_number]['name'] = h_parse.unescape(type_data['name'])
+    elem_data[set_number]['category'] = h_parse.unescape(category_data['category_name'])
+    elem_data[set_number]['avg'] = round(int(float(current_items['avg_price'])))
+    elem_data[set_number]['max'] = round(int(float(current_items['max_price'])))
+    elem_data[set_number]['min'] = round(int(float(current_items['min_price'])))
+    elem_data[set_number]['quantity'] = current_items['unit_quantity']
+    elem_data[set_number]['currency'] = current_items['currency_code']
+    elem_data[set_number]['year'] = type_data['year_released']
+
+    return elem_data
+
 
 """
 This prints stuff to the screen.
@@ -84,7 +89,7 @@ def print_details(element_data, number):
 Setup XLS
 """
 def setup_xls_writer():
-    workbook = xlsxwriter.Workbook('Items.xlsx')
+    workbook = xlsxwriter.Workbook('Dec2023-combined.xlsx')
 
     now = datetime.now() # current date and time
     date_stamp = now.strftime("%m_%d_%Y")
@@ -112,7 +117,7 @@ def setup_xls_writer():
     header_format.set_bold()
     header_format.set_bg_color('#C0C0C0')
 
-    xls_headers = ['Item', 'Name', 'Category', 'Avg Price', 'Min Price', 'Max Price', 'Quantity']
+    xls_headers = ['Item', 'Name', 'Category', 'Avg Price', 'Min Price', 'Max Price', 'Quantity', 'Year']
 
     col_adjust = 0
     for headers in xls_headers:
@@ -130,8 +135,6 @@ def main():
     parser.add_argument('-v', '--verbose', action="store_true")
     args = parser.parse_args()
 
-    (workbook, worksheet, cell_format) = setup_xls_writer()
-
     set_num = args.set
     filename = args.file
 
@@ -144,7 +147,12 @@ def main():
     token_value = config['secrets']['token_value']
     token_secret = config['secrets']['token_secret']
     try:
-        auth = oauth(consumer_key, consumer_secret, token_value, token_secret)
+        session = Bricklink(
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            token=token_value,
+            token_secret=token_secret
+        )
     except Exception as e:
         logging.error('Could not get auth token')
         sys.exit(1)
@@ -153,13 +161,15 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     if set_num:
-        res = getDetails(set_num, auth)
+        res = getDetails(session, set_num)
         if not res:
             sys.exit(1)
         logging.debug(json.dumps(res, indent=4, sort_keys=True))
         for key in res:
             print_details(res[key], key)
     elif filename:
+        (workbook, worksheet, cell_format) = setup_xls_writer()
+
         if exists(filename):
             logging.info("Processing sets in " + filename)
 
@@ -177,7 +187,7 @@ def main():
                         break
                     #print(line.strip())
                     number = line.strip()
-                    res = getDetails(number, auth)
+                    res = getDetails(session, number)
                     if not res:
                         sys.exit(1)
                     for key in res:
@@ -193,10 +203,12 @@ def main():
                         worksheet.write(row, col+4, res[key]['min'], cell_format)
                         worksheet.write(row, col+5, res[key]['max'], cell_format)
                         worksheet.write(row, col+6, res[key]['quantity'], cell_format)
+                        worksheet.write(row, col+7, res[key]['year'], cell_format)
+
 
                 logging.info("Total: " + str(total) + "USD")
 
-    workbook.close()
+        workbook.close()
 
 if __name__ == '__main__':
     main()
