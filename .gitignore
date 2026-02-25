@@ -1,6 +1,7 @@
 *.xlsx
 *.list
 *.numbers
+*.txt
 venv*
-config_*
+config.ini
 
