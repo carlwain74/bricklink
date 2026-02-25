@@ -13,12 +13,6 @@ Utilities for collecting data from Bricklink using their API
 ## Setup Virtual Environment
 
 ### Creat virtual environment 
-```
-python3 -m venv env
-source env/bin/activate
-```
-
-Setup virtual env based on which version of Excel package you wish to make use of.
 
 ```
 pipenv lock
