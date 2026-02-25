@@ -5,14 +5,12 @@ Utilities for collecting data from Bricklink using their API
 - Python3.13
 
 ## Packages
-- XlsWriter (Used by get_set.py)
-- openpyxl (Used by get_set_openpyxl.py)
-- bricklink-api (Common)
-- virtualenv
+- openpyxl
+- bricklink-py
 
 ## Setup Virtual Environment
 
-### Creat virtual environment 
+### Create virtual environment 
 
 ```
 pipenv lock
@@ -46,18 +44,20 @@ There are two modes; Printing details about a single set `-s` or multiple sets `
 Single set option will take presedence over multiple sets
 
 ```
-usage: generate_set_sheet.py [-h] [-s SET] [-f FILE] [-v]
+usage: app.py [-h] [-s SET] [-f FILE] [-m MULTI] [-v] [-o OUTPUT]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -s SET, --set SET
   -f FILE, --file FILE
+  -m MULTI, --multi MULTI
   -v, --verbose
+  -o OUTPUT, --output OUTPUT
 ```
 ### Single set
 
 ```
-python generate_set_sheet.py -s 40158
+pipenv run python app.py -s 40158
 2021-11-11 19:16:48 INFO     Item: 40158
 2021-11-11 19:16:48 INFO       Name: Pirates Chess Set, Pirates III
 2021-11-11 19:16:48 INFO       Category: Game
@@ -76,7 +76,7 @@ You need to create a text file with a list of sets as follows. Script will gener
 ```
 Then include the filename instead of a set.
 ```
-pipenv run python generate_set_sheet.py -f test.txt
+pipenv run python app.py -f test.txt
 2021-11-11 19:18:42 INFO     Processing sets in test.txt
 2021-11-11 19:18:44 INFO     Item: 21036-1
 2021-11-11 19:18:44 INFO       Name: Arc De Triomphe
@@ -95,4 +95,3 @@ pipenv run python generate_set_sheet.py -f test.txt
 2021-11-11 19:18:45 INFO     Total: 136USD
 ```
 
-Use `get_set_openpyxl.py` to generate a sheet per set. Additional runs will add rows for each set. This is a useful aspect if you want to run the script on periodically to chart changes.
