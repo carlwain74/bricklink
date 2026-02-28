@@ -18,8 +18,50 @@ from datetime import datetime
 
 logging.basicConfig(
 format='%(asctime)s %(levelname)-8s %(message)s',
-level=logging.INFO,
+level=logging.DEBUG,
 datefmt='%Y-%m-%d %H:%M:%S')
+
+
+def get_last_sale_date(sales: dict) -> str | None:
+    """
+    Given an unordered dictionary of past sales (keyed by any value),
+    return the ISO 8601 date string of the most recent sale.
+
+    Each sale entry is expected to contain a 'date_ordered' field in
+    ISO 8601 format, e.g. '2023-05-27T01:09:39.493Z'.
+
+    Returns the raw ISO string of the most recent sale, or None if the
+    dictionary is empty or no valid dates are found.
+
+    Example
+    -------
+    sales = {
+        1: {"date_ordered": "2023-05-27T01:09:39.493Z", "unit_price": "197.42"},
+        2: {"date_ordered": "2023-12-11T18:44:02.100Z", "unit_price": "210.00"},
+        3: {"date_ordered": "2022-08-03T09:15:55.000Z", "unit_price": "185.00"},
+    }
+    get_last_sale_date(sales)
+    # → '2023-12-11T18:44:02.100Z'
+    """
+    latest_dt  = None
+    latest_raw = None
+
+    items = sales.values() if isinstance(sales, dict) else sales
+    for sale in items:
+        raw = sale.get('date_ordered', '')
+        if not raw:
+            continue
+        try:
+            # Replace trailing Z with +00:00 for fromisoformat compatibility
+            dt = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+        except ValueError:
+            continue
+
+        if latest_dt is None or dt > latest_dt:
+            latest_dt  = dt
+            latest_raw = raw
+
+    return latest_raw
 
 """
 This calls the API functions to get the data.
@@ -41,7 +83,7 @@ def getDetails(session, set_number):
                                                           guide_type="sold", country_code="US", region="north_america")
     except Exception as e:
         logging.exception("Failed to get price guide for item" + str(e))
-        sys.exit()
+        return {}
 
     logging.debug(json.dumps(current_items, indent=4, sort_keys=True))
     logging.debug(json.dumps(past_sales, indent=4, sort_keys=True))
@@ -57,12 +99,23 @@ def getDetails(session, set_number):
     elem_data[set_number] = {}
     elem_data[set_number]['name'] = h_parse.unescape(type_data['name'])
     elem_data[set_number]['category'] = h_parse.unescape(category_data['category_name'])
-    elem_data[set_number]['avg'] = round(int(float(current_items['avg_price'])))
-    elem_data[set_number]['max'] = round(int(float(current_items['max_price'])))
-    elem_data[set_number]['min'] = round(int(float(current_items['min_price'])))
-    elem_data[set_number]['quantity'] = current_items['unit_quantity']
-    elem_data[set_number]['currency'] = current_items['currency_code']
+    elem_data[set_number]['current'] = {}
+    elem_data[set_number]['current']['avg'] = round(int(float(current_items['avg_price'])))
+    elem_data[set_number]['current']['max'] = round(int(float(current_items['max_price'])))
+    elem_data[set_number]['current']['min'] = round(int(float(current_items['min_price'])))
+    elem_data[set_number]['current']['quantity'] = current_items['unit_quantity']
+    elem_data[set_number]['current']['currency'] = current_items['currency_code']
+    elem_data[set_number]['past'] = {}
+    elem_data[set_number]['past']['avg'] = round(int(float(past_sales['avg_price'])))
+    elem_data[set_number]['past']['max'] = round(int(float(past_sales['max_price'])))
+    elem_data[set_number]['past']['min'] = round(int(float(past_sales['min_price'])))
+    elem_data[set_number]['past']['quantity'] = past_sales['unit_quantity']
+    elem_data[set_number]['past']['currency'] = past_sales['currency_code']
+    elem_data[set_number]['past']['last_sale_date'] = get_last_sale_date(past_sales['price_detail'])
     elem_data[set_number]['year'] = type_data['year_released']
+    elem_data[set_number]['image'] = type_data['image_url']
+    elem_data[set_number]['thumbnail'] = type_data['thumbnail_url']
+
 
     return elem_data
 
@@ -73,11 +126,20 @@ def print_details(element_data, number):
     logging.info("Item: " + number)
     logging.info("  Name: " + element_data['name'])
     logging.info("  Category: " + element_data['category'])
-    logging.info("  Avg Price: " + str(element_data['avg']) + " " + element_data['currency'])
-    logging.info("  Max Price: " + str(element_data['max']) + " " + element_data['currency'])
-    logging.info("  Min Price: " + str(element_data['min']) + " " + element_data['currency'])
-    logging.info("  Quantity avail: " + str(element_data['quantity']))
+    logging.info("  Current Sales: ")
+    logging.info("     Average: " + str(element_data['current']['avg']) + " " + element_data['current']['currency'])
+    logging.info("     Max: " + str(element_data['current']['max']) + " " + element_data['current']['currency'])
+    logging.info("     Min: " + str(element_data['current']['min']) + " " + element_data['current']['currency'])
+    logging.info("     Quantity avail: " + str(element_data['current']['quantity']))
+    logging.info("  Previous Sales: ")
+    logging.info("     Average: " + str(element_data['past']['avg']) + " " + element_data['past']['currency'])
+    logging.info("     Max: " + str(element_data['past']['max']) + " " + element_data['past']['currency'])
+    logging.info("     Min: " + str(element_data['past']['min']) + " " + element_data['past']['currency'])
+    logging.info("     Quantity avail: " + str(element_data['past']['quantity']))
+    logging.info("     Last Sale Date: " + str(element_data['past']['last_sale_date']))
     logging.info("  Year Released: " + str(element_data['year']))
+    logging.info("  Image: " + str(element_data['image']))
+    logging.info("  Thumbnail: " + str(element_data['thumbnail']))
 
 """
 Create workbook
@@ -201,8 +263,9 @@ def create_api_session(config_file):
     return session
 
 
-def generate_single_sheet(file_handler, workbook, worksheet):
+def generate_single_sheet(session, file_handler, workbook, worksheet):
     logging.info('Writing all sets to the same file')
+    total = 0
     _row = 1
     _col = 1
     while True:
@@ -217,7 +280,7 @@ def generate_single_sheet(file_handler, workbook, worksheet):
         for key in res:
             print_details(res[key], key)
             logging.debug(json.dumps(res, indent=4, sort_keys=True))
-            total += res[key]['avg']
+            total += res[key]['current']['avg']
 
             _row += 1
 
@@ -227,23 +290,24 @@ def generate_single_sheet(file_handler, workbook, worksheet):
             data.alignment = Alignment(horizontal="center", vertical="center")
             data = worksheet.cell(row=_row, column=_col+2, value=res[key]['category'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+3, value=res[key]['avg'])
+            data = worksheet.cell(row=_row, column=_col+3, value=res[key]['current']['avg'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+4, value=res[key]['min'])
+            data = worksheet.cell(row=_row, column=_col+4, value=res[key]['current']['min'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+5, value=res[key]['max'])
+            data = worksheet.cell(row=_row, column=_col+5, value=res[key]['current']['max'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+6, value=res[key]['quantity'])
+            data = worksheet.cell(row=_row, column=_col+6, value=res[key]['current']['quantity'])
             data.alignment = Alignment(horizontal="center", vertical="center")
             data = worksheet.cell(row=_row, column=_col+7, value=res[key]['year'])
             data.alignment = Alignment(horizontal="center", vertical="center")
 
     logging.info("Total: " + str(total) + "USD")
 
-def generate_multi_sheet(file_handler, workbook):
+def generate_multi_sheet(session, file_handler, workbook):
 
     logging.info("Writing sets per sheet`")
 
+    total = 0
     _row = 6
     _col = 2
 
@@ -279,13 +343,13 @@ def generate_multi_sheet(file_handler, workbook):
             data = worksheet.cell(row=3, column=3, value=res[key]['category'])
             data.alignment = Alignment(horizontal="center", vertical="center")
             data = worksheet.cell(row=_row, column=_col, value=date_stamp)
-            data = worksheet.cell(row=_row, column=_col+1, value=res[key]['avg'])
+            data = worksheet.cell(row=_row, column=_col+1, value=res[key]['current']['avg'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+2, value=res[key]['min'])
+            data = worksheet.cell(row=_row, column=_col+2, value=res[key]['current']['min'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+3, value=res[key]['max'])
+            data = worksheet.cell(row=_row, column=_col+3, value=res[key]['current']['max'])
             data.alignment = Alignment(horizontal="center", vertical="center")
-            data = worksheet.cell(row=_row, column=_col+4, value=res[key]['quantity'])
+            data = worksheet.cell(row=_row, column=_col+4, value=res[key]['current']['quantity'])
             data.alignment = Alignment(horizontal="center", vertical="center")
 
     logging.info("Total: " + str(total) + "USD")
@@ -322,30 +386,39 @@ def generate_multi_sheet(file_handler, workbook):
     data = summary.cell(row=_srow, column=3, value=total)
     data.alignment = Alignment(horizontal="center", vertical="center")
 
+def test_config(config_file = 'config.ini'):
+    session = create_api_session(config_file)
+    res = getDetails(session, "75105-1")
+
+    if res:
+        return True
+    else:
+        return False
+
 """
 The main handler routine.
 """
-def sheet_handler(set_num, set_list, multi_sheet, verbose, config_file = 'config.ini', output_file = 'Sets.xlsx'):
+def sheet_handler(set_num, set_list, multi_sheet, output_file = 'Sets.xlsx', config_file = 'config.ini'):
     
     logging.info('Setup API session')
     session = create_api_session(config_file)
 
-    if not  session:
+    if not session:
         logging.error('Could not create an API session')
         sys.exit(1)
 
-    if verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-
     if set_num:
         logging.info('Processing single set')
-        res = getDetails(session, set_num)
-        if not res:
-            sys.exit(1)
+        try:
+            res = getDetails(session, set_num)
+        except Exception as e:
+            logging.exception("Could not get set details" + str(e))
+            return None
+
         logging.debug(json.dumps(res, indent=4, sort_keys=True))
         for key in res:
             print_details(res[key], key)
-    elif filename:
+    elif set_list:
         xls_filename = output_file
 
         if multi_sheet:
@@ -354,25 +427,22 @@ def sheet_handler(set_num, set_list, multi_sheet, verbose, config_file = 'config
             (workbook, worksheet) = create_wookbook_and_sheet(xls_filename)
 
         logging.info('Processing multiple sets')
-        if exists(filename):
-            logging.info("Processing sets in " + filename)
+        if exists(set_list):
+            logging.info("Processing sets in " + set_list)
 
-            if stat(filename).st_size == 0:
+            if stat(set_list).st_size == 0:
                 logging.error("File is empty!!")
                 sys.exit()
             else:
-                file_handler = open(filename, "r")
-                total = 0
-                _row = 6
-                _col = 2
+                file_handler = open(set_list, "r")
                 now = datetime.now()
                 date_stamp = now.strftime("%m-%d-%Y")
 
                 # Sheet per item and Summary
                 if multi_sheet:
-                    generate_multi_sheet(file_handler, workbook)
+                    generate_multi_sheet(session, file_handler, workbook)
                 else:
-                    generate_single_sheet(file_handler, workbook, worksheet)
+                    generate_single_sheet(session, file_handler, workbook, worksheet)
 
             workbook.save(filename=xls_filename)
 
