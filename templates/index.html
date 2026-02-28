@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lego Inventory Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red:       #E3000B;
+      --red-dk:    #8a0007;
+      --yellow:    #FFD700;
+      --yellow-dk: #a08000;
+      --blue:      #006CB7;
+      --blue-dk:   #004f8a;
+      --black:     #111112;
+      --panel:     #1A1B1E;
+      --surface:   #F5F5F0;
+      --grey:      #D0CFCA;
+      --radius:    8px;
+      --sidebar:   320px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Nunito', sans-serif;
+      background: var(--black);
+      color: var(--surface);
+    }
+
+    /* ═══════════════════════════
+       APP SHELL
+    ═══════════════════════════ */
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar) 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      border-right: 4px solid var(--yellow);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      animation: slideInLeft 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+    }
+
+    .stud-strip {
+      background: var(--red);
+      flex-shrink: 0;
+    }
+    .stud-strip::after {
+      content: '';
+      display: block;
+      height: 14px;
+      background: var(--red);
+      background-image:
+        radial-gradient(circle at 18px 8px,  #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 54px 8px,  #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 90px 8px,  #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 126px 8px, #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 162px 8px, #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 198px 8px, #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 234px 8px, #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 270px 8px, #ff3a41 10px, transparent 10px),
+        radial-gradient(circle at 306px 8px, #ff3a41 10px, transparent 10px);
+      background-size: 320px 20px;
+      background-repeat: no-repeat;
+    }
+
+    .sidebar-header {
+      background: var(--red);
+      padding: 18px 24px 20px;
+      flex-shrink: 0;
+    }
+    .sidebar-header h1 {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.3px;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-header p {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      margin-top: 4px;
+    }
+
+    .sidebar-body {
+      padding: 28px 24px 32px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .field-group { margin-bottom: 22px; }
+
+    label {
+      display: block;
+      font-weight: 900;
+      font-size: 0.9rem;
+      color: var(--black);
+      margin-bottom: 7px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 11px 13px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: 2.5px solid #bbb;
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--black);
+      appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23333' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,108,183,0.15);
+    }
+    input[type="text"]::placeholder { color: #aaa; font-weight: 400; }
+
+    /* Set number input + suffix hint */
+    .input-with-hint { position: relative; }
+    .input-with-hint input { padding-right: 52px; }
+    .input-suffix {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #aaa;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .input-with-hint input:focus ~ .input-suffix { color: var(--blue); }
+
+    /* File upload */
+    .file-upload-wrapper { position: relative; }
+    .file-upload-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      border: 2.5px dashed #bbb;
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: #fff;
+      transition: border-color 0.2s, background 0.2s;
+      font-weight: 700;
+      color: var(--black);
+    }
+    .file-upload-label:hover { border-color: var(--blue); background: #eef6ff; }
+    .upload-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .file-name {
+      font-size: 0.85rem;
+      color: #666;
+      font-weight: 400;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* Collapsible */
+    .collapsible {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+      margin-bottom: 0;
+    }
+    .collapsible.visible { max-height: 120px; opacity: 1; margin-bottom: 22px; }
+
+    .divider {
+      height: 3px;
+      background: repeating-linear-gradient(90deg, var(--yellow) 0 14px, transparent 14px 20px);
+      border-radius: 2px;
+      margin: 4px 0 24px;
+    }
+
+    /* Submit */
+    .btn-submit {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--red);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      box-shadow: 0 5px 0 var(--red-dk);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+      margin-top: auto;
+    }
+    .btn-submit:hover  { background: #ff1a24; }
+    .btn-submit:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--red-dk); }
+    .btn-submit:disabled { background: #bbb; box-shadow: 0 5px 0 #888; cursor: not-allowed; }
+    .btn-submit .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    .btn-submit.loading .btn-text { display: none; }
+    .btn-submit.loading .spinner  { display: block; }
+
+    /* ── CONTENT PANEL ── */
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 48px 48px 40px;
+      height: 100vh;
+      overflow: hidden;
+      animation: fadeIn 0.6s 0.2s ease both;
+      box-sizing: border-box;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      opacity: 0.35;
+      user-select: none;
+      transition: opacity 0.3s;
+      margin: auto;
+      align-self: center;
+    }
+    .empty-state.hidden { opacity: 0; pointer-events: none; display: none; }
+    .empty-icon { font-size: 4rem; display: block; margin-bottom: 16px; filter: grayscale(1); }
+    .empty-state h2 {
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--grey);
+    }
+    .empty-state p { font-size: 0.85rem; color: #555; margin-top: 6px; }
+    /* ── CONTENT LOADING SPINNER ── */
+    .loading-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex: 1;
+      align-self: stretch;
+    }
+    .loading-state.visible { display: flex; }
+
+    .lego-spinner {
+      position: relative;
+      width: 64px;
+      height: 64px;
+    }
+
+    /* Outer ring */
+    .lego-spinner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 215, 0, 0.15);
+      border-top-color: var(--yellow);
+      animation: spin 0.9s linear infinite;
+    }
+
+    /* Inner ring — counter-spins */
+    .lego-spinner::after {
+      content: '';
+      position: absolute;
+      inset: 10px;
+      border-radius: 50%;
+      border: 3px solid rgba(227, 0, 11, 0.15);
+      border-bottom-color: var(--red);
+      animation: spin 0.7s linear infinite reverse;
+    }
+
+    /* Lego stud in centre */
+    .spinner-stud {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spinner-stud::before {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0, 108, 183, 0.25);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .loading-label {
+      font-size: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #555;
+      animation: fadePulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);    opacity: 1; }
+      50%       { transform: scale(1.2); opacity: 0.7; }
+    }
+    @keyframes fadePulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 0.9; }
+    }
+
+
+
+    /* ── OUTPUT WRAPPER ── */
+    .output-wrap {
+      width: 100%;
+      max-width: 760px;
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+      margin: 0 auto;
+    }
+    .output-wrap.visible { display: flex; }
+    .output-wrap.visible .output-header,
+    .output-wrap.visible .set-cards-body,
+    .output-wrap.visible .terminal-body {
+      animation: fadeIn 0.35s ease both;
+    }
+
+    .output-header {
+      background: var(--yellow);
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: var(--radius) var(--radius) 0 0;
+      flex-shrink: 0;
+    }
+    .output-header-title {
+      font-weight: 900;
+      font-size: 0.75rem;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--black);
+      margin-left: 4px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .dot-red   { background: var(--red); }
+    .dot-blue  { background: var(--blue); }
+    .dot-black { background: var(--black); }
+
+    /* Terminal (errors only now) */
+    .terminal-body {
+      background: #0d0d0f;
+      border: 3px solid var(--yellow);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+    pre#output {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.83rem;
+      line-height: 1.7;
+      color: #d4d4c8;
+      padding: 22px 24px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    pre#output::-webkit-scrollbar { width: 5px; }
+    pre#output::-webkit-scrollbar-track { background: #111; }
+    pre#output::-webkit-scrollbar-thumb { background: var(--yellow); border-radius: 3px; }
+    .error-text { color: #ff6b6b; }
+
+    /* ── SET CARDS CONTAINER ── */
+    .set-cards-body {
+      border: 3px solid var(--yellow);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* scrollable area when many cards */
+    .set-cards-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .set-cards-scroll::-webkit-scrollbar { width: 5px; }
+    .set-cards-scroll::-webkit-scrollbar-track { background: var(--panel); }
+    .set-cards-scroll::-webkit-scrollbar-thumb { background: var(--yellow); border-radius: 3px; }
+
+    /* Individual set card */
+    .set-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: visible;
+      box-shadow: 0 3px 0 var(--yellow-dk);
+      animation: popIn 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-fill-mode: both;
+    }
+    /* Clip card contents without clipping the card animation itself */
+    .set-card > * { overflow: hidden; border-radius: inherit; }
+    .set-hero { border-radius: var(--radius) var(--radius) 0 0 !important; }
+    .set-stats { border-radius: 0 0 var(--radius) var(--radius) !important; overflow: hidden; }
+
+    /* Stagger animation for multi-card — fill-mode both keeps opacity:0 during delay */
+    .set-card:nth-child(1)  { animation-delay: 0.00s; animation-fill-mode: both; }
+    .set-card:nth-child(2)  { animation-delay: 0.06s; animation-fill-mode: both; }
+    .set-card:nth-child(3)  { animation-delay: 0.12s; animation-fill-mode: both; }
+    .set-card:nth-child(4)  { animation-delay: 0.18s; animation-fill-mode: both; }
+    .set-card:nth-child(5)  { animation-delay: 0.24s; animation-fill-mode: both; }
+    .set-card:nth-child(6)  { animation-delay: 0.30s; animation-fill-mode: both; }
+    .set-card:nth-child(7)  { animation-delay: 0.36s; animation-fill-mode: both; }
+    .set-card:nth-child(8)  { animation-delay: 0.42s; animation-fill-mode: both; }
+    .set-card:nth-child(9)  { animation-delay: 0.48s; animation-fill-mode: both; }
+    .set-card:nth-child(10) { animation-delay: 0.54s; }
+
+    .set-hero {
+      background: var(--blue);
+      padding: 16px 20px 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .set-number-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.85);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.72rem;
+      padding: 2px 9px;
+      border-radius: 20px;
+      margin-bottom: 7px;
+      letter-spacing: 1px;
+    }
+    .set-name {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.15;
+    }
+    .set-category {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.55);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .set-year-badge {
+      background: var(--yellow);
+      color: var(--black);
+      font-weight: 900;
+      font-size: 1rem;
+      padding: 5px 13px;
+      border-radius: var(--radius);
+      white-space: nowrap;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    .set-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+    }
+    /* Row divider label between current and previous sales */
+    .stats-section-label {
+      grid-column: 1 / -1;
+      font-size: 0.6rem;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      padding: 6px 16px 4px;
+      border-top: 2px solid var(--grey);
+      border-bottom: none;
+    }
+    .stats-section-label.current { color: var(--blue); background: #f0f6fc; }
+    .stats-section-label.previous { color: #888; background: #f7f7f5; }
+    .set-stats .stat-block {
+      padding: 10px 16px 12px;
+      border-right: 2px solid var(--grey);
+    }
+    .set-stats .stat-block:last-child,
+    .set-stats .stat-block.no-border { border-right: none; }
+    .stat-label {
+      font-size: 0.6rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 3px;
+    }
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--black);
+    }
+    .stat-value .currency {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #aaa;
+      margin-left: 2px;
+    }
+    .stat-block.highlight .stat-value { color: var(--blue); }
+    .stat-block.qty        .stat-value { color: var(--red); }
+    .stat-block.prev       .stat-value { color: #777; font-size: 0.95rem; }
+    .stat-block.prev       .stat-label { color: #bbb; }
+    .stat-block.last-sale {
+      grid-column: 1 / -1;
+      border-right: none;
+      border-top: 1px solid var(--grey);
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat-block.last-sale .stat-label {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+    .last-sale-date {
+      font-size: 0.88rem !important;
+      font-weight: 700;
+      color: #666 !important;
+    }
+    .stat-block.sale       .stat-value { color: #2a9d3f; }
+    .stat-block.sale       .stat-label::before { content: '★ '; }
+
+
+
+
+    /* ── THUMBNAIL & IMAGE POPUP ── */
+    .set-hero {
+      position: relative;
+    }
+
+    .thumb-wrap {
+      position: relative;
+      flex-shrink: 0;
+      align-self: flex-start;
+      cursor: pointer;
+    }
+
+    .thumb-img {
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.15);
+      display: block;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .thumb-wrap:hover .thumb-img {
+      border-color: var(--yellow);
+      transform: scale(1.08);
+    }
+
+    /* Full image popup */
+    .thumb-popup {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .thumb-popup.visible {
+      display: block;
+    }
+
+    .thumb-popup img {
+      max-width: 320px;
+      max-height: 320px;
+      object-fit: contain;
+      border-radius: var(--radius);
+      border: 3px solid var(--yellow);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+      background: var(--panel);
+      display: block;
+    }
+
+
+    /* ── SETTINGS COG ── */
+    .sidebar-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .sidebar-top-bar .section-label { margin-bottom: 0; }
+
+    .cog-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #aaa;
+      line-height: 1;
+      transition: color 0.2s, transform 0.4s;
+      flex-shrink: 0;
+    }
+    .cog-btn:hover { color: var(--blue); }
+    .cog-btn:hover svg { transform: rotate(45deg); }
+    .cog-btn svg { display: block; transition: transform 0.4s ease; }
+
+    /* ── SETTINGS MODAL ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.visible { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      margin: 20px;
+      box-shadow: 0 8px 0 var(--yellow-dk), 0 12px 48px rgba(0,0,0,0.7);
+      overflow: hidden;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+    }
+
+    .modal-header {
+      background: var(--blue);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h2 {
+      font-size: 1rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      font-size: 1.4rem;
+      line-height: 1;
+      padding: 0 4px;
+      transition: color 0.15s;
+    }
+    .modal-close:hover { color: #fff; }
+
+    .modal-body {
+      padding: 24px 24px 8px;
+    }
+
+    .modal-hint {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* Secret field with show/hide toggle */
+    .secret-field-group {
+      margin-bottom: 18px;
+    }
+    .secret-field-group label {
+      font-size: 0.8rem;
+      color: #444;
+      margin-bottom: 6px;
+    }
+    .secret-input-wrap {
+      position: relative;
+      display: flex;
+    }
+    .secret-input-wrap input {
+      flex: 1;
+      padding: 10px 44px 10px 12px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      font-weight: 400;
+      border: 2.5px solid #ccc;
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--black);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .secret-input-wrap input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,108,183,0.12);
+    }
+    .secret-input-wrap input.has-value {
+      border-color: #4caf50;
+    }
+    .show-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+      font-size: 1rem;
+    }
+    .show-btn:hover { color: var(--blue); }
+
+    .modal-footer {
+      padding: 16px 24px 20px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      border-top: 2px solid var(--grey);
+      margin-top: 8px;
+    }
+
+    .btn-cancel {
+      padding: 10px 20px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 900;
+      background: none;
+      border: 2.5px solid #ccc;
+      border-radius: var(--radius);
+      color: #666;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-cancel:hover { border-color: #999; color: #333; }
+
+    .btn-save {
+      padding: 10px 24px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 900;
+      background: var(--blue);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 0 var(--blue-dk);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+    }
+    .btn-save:hover  { background: #0080d4; }
+    .btn-save:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--blue-dk); }
+    .btn-save:disabled { background: #bbb; box-shadow: none; cursor: not-allowed; }
+
+    .btn-test {
+      padding: 10px 20px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 900;
+      background: none;
+      border: 2.5px solid var(--blue);
+      border-radius: var(--radius);
+      color: var(--blue);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-test:hover    { background: var(--blue); color: #fff; }
+    .btn-test:disabled { border-color: #bbb; color: #bbb; cursor: not-allowed; background: none; }
+    .btn-test .test-spinner {
+      display: none;
+      width: 13px; height: 13px;
+      border: 2px solid rgba(0,108,183,0.3);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .btn-test:hover .test-spinner { border-top-color: #fff; border-color: rgba(255,255,255,0.3); }
+    .btn-test.testing .test-spinner  { display: inline-block; }
+    .btn-test.testing .test-label    { display: none; }
+
+    .save-status {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 0;
+      align-self: center;
+      margin-right: auto;
+    }
+    .save-status.ok  { color: #4caf50; }
+    .save-status.err { color: var(--red); }
+
+    /* ── CATEGORY FILTER BAR ── */
+    .filter-bar {
+      background: var(--black);
+      border-bottom: 2px solid #2a2a2e;
+      padding: 12px 20px;
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .filter-bar.visible { display: flex; }
+
+    .filter-label {
+      font-size: 0.65rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #555;
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      border: 2px solid #333;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .filter-chip:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+    }
+    .filter-chip.active {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: var(--black);
+    }
+    .filter-chip .chip-count {
+      font-size: 0.68rem;
+      font-weight: 700;
+      opacity: 0.7;
+    }
+    .filter-chip.active .chip-count { opacity: 0.6; }
+
+    /* Summary bar (file mode) */
+    .summary-bar {
+      background: var(--black);
+      border-top: 2px solid #2a2a2e;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #888;
+    }
+    .summary-item strong {
+      color: var(--yellow);
+      font-size: 0.9rem;
+    }
+    .download-link {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .download-link:hover  { background: #ffe033; }
+    .download-link:active { transform: translateY(1px); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slideInLeft {
+      from { transform: translateX(-30px); opacity: 0; }
+      to   { transform: translateX(0);     opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes popIn {
+      from { transform: scale(0.94) translateY(10px); opacity: 0; }
+      to   { transform: scale(1)    translateY(0);    opacity: 1; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 820px) {
+      .app { grid-template-columns: 1fr; height: auto; overflow: visible; }
+      .sidebar { position: static; height: auto; border-right: none; border-bottom: 4px solid var(--yellow); }
+      .content { padding: 28px 16px 48px; height: auto; overflow: visible; }
+      .output-wrap { flex: none; }
+      .set-cards-body { flex: none; }
+      .set-cards-scroll { max-height: 60vh; flex: none; }
+      .output-wrap { max-width: 100%; }
+      .set-stats { grid-template-columns: repeat(2, 1fr); }
+      .stat-block:nth-child(2) { border-right: none; }
+      .stat-block:nth-child(1), .stat-block:nth-child(2) { border-bottom: 2px solid var(--grey); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="stud-strip"></div>
+    <div class="sidebar-header">
+      <h1>🧱 Lego Inventory</h1>
+      <p>Set Price Analyzer</p>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="sidebar-top-bar">
+        <div class="section-label">Configure</div>
+        <button class="cog-btn" id="cog-btn" title="API Settings" aria-label="Open API settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="field-group">
+        <label for="mode">Input Type</label>
+        <select id="mode" name="mode">
+          <option value="set">Single Set Number</option>
+          <option value="file">File List (multiple sets)</option>
+        </select>
+      </div>
+
+      <!-- Single set: auto-appends -1 if missing -->
+      <div class="field-group" id="set-field">
+        <label for="set_number">Set Number</label>
+        <div class="input-with-hint">
+          <input type="text" id="set_number" name="set_number"
+                 placeholder="e.g. 75192" maxlength="20" />
+          <span class="input-suffix">-1</span>
+        </div>
+      </div>
+
+      <!-- File upload -->
+      <div class="field-group" id="file-field" style="display:none;">
+        <label>Set List File <span style="font-weight:400;color:#888;font-size:0.8rem;">(one per line)</span></label>
+        <div class="file-upload-wrapper">
+          <label class="file-upload-label" for="set_file">
+            <span class="upload-icon">📂</span>
+            <span class="file-name" id="file-name-display">Choose a .txt file…</span>
+          </label>
+          <input type="file" id="set_file" name="set_file" accept=".txt,.list" />
+        </div>
+      </div>
+
+      <!-- Multi-sheet (file mode only) -->
+      <div class="collapsible field-group" id="multi-sheet-field">
+        <label for="multi_sheet">Multi-Sheet Output</label>
+        <select id="multi_sheet" name="multi_sheet">
+          <option value="false">Disabled — combined sheet</option>
+          <option value="true">Enabled — one sheet per set</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="btn-submit" id="submit-btn" type="button">
+        <span class="btn-text">🔧 Generate Inventory</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ CONTENT ══ -->
+  <main class="content">
+
+    <div class="empty-state" id="empty-state">
+      <span class="empty-icon">📋</span>
+      <h2>No results yet</h2>
+      <p>Configure a set and hit Generate</p>
+    </div>
+
+    <div class="loading-state" id="loading-state">
+      <div class="lego-spinner">
+        <div class="spinner-stud"></div>
+      </div>
+      <span class="loading-label">Generating…</span>
+    </div>
+
+    <div class="output-wrap" id="output-wrap">
+      <div class="output-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-blue"></div>
+        <div class="dot dot-black"></div>
+        <span class="output-header-title" id="output-title">Output</span>
+      </div>
+
+      <!-- Error / fallback terminal -->
+      <div class="terminal-body" id="terminal-body" style="display:none;">
+        <pre id="output"></pre>
+      </div>
+
+      <!-- Set cards body -->
+      <div class="set-cards-body" id="set-cards-body" style="display:none;">
+        <div class="filter-bar" id="filter-bar">
+          <span class="filter-label">Category</span>
+          <!-- chips injected here -->
+        </div>
+        <div class="set-cards-scroll" id="set-cards-scroll">
+          <!-- cards injected here -->
+        </div>
+        <!-- summary bar shown in file mode -->
+        <div class="summary-bar" id="summary-bar" style="display:none;">
+          <div class="summary-item">Sets: <strong id="summary-count">0</strong></div>
+          <div class="summary-item">Current avg: <strong id="summary-avg">—</strong></div>
+          <div class="summary-item">Previous avg: <strong id="summary-avg-prev">—</strong></div>
+          <a class="download-link" id="download-link" href="/download" download="Sets.xlsx">⬇ Download Sets.xlsx</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div class="modal-backdrop" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Bricklink API Settings
+      </h2>
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">These credentials are stored locally in <code>config.ini</code> and never transmitted anywhere other than the Bricklink API. Existing values are shown masked — enter a new value to update.</p>
+      <div class="secret-field-group">
+        <label for="cfg-consumer-key">Consumer Key</label>
+        <div class="secret-input-wrap">
+          <input type="password" id="cfg-consumer-key" autocomplete="off" placeholder="Enter consumer key…" />
+          <button class="show-btn" data-target="cfg-consumer-key" title="Show / hide">👁</button>
+        </div>
+      </div>
+      <div class="secret-field-group">
+        <label for="cfg-consumer-secret">Consumer Secret</label>
+        <div class="secret-input-wrap">
+          <input type="password" id="cfg-consumer-secret" autocomplete="off" placeholder="Enter consumer secret…" />
+          <button class="show-btn" data-target="cfg-consumer-secret" title="Show / hide">👁</button>
+        </div>
+      </div>
+      <div class="secret-field-group">
+        <label for="cfg-token-value">Token Value</label>
+        <div class="secret-input-wrap">
+          <input type="password" id="cfg-token-value" autocomplete="off" placeholder="Enter token value…" />
+          <button class="show-btn" data-target="cfg-token-value" title="Show / hide">👁</button>
+        </div>
+      </div>
+      <div class="secret-field-group">
+        <label for="cfg-token-secret">Token Secret</label>
+        <div class="secret-input-wrap">
+          <input type="password" id="cfg-token-secret" autocomplete="off" placeholder="Enter token secret…" />
+          <button class="show-btn" data-target="cfg-token-secret" title="Show / hide">👁</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="save-status" id="save-status"></span>
+      <button class="btn-test" id="modal-test">
+        <span class="test-label">🔌 Test Connection</span>
+        <span class="test-spinner"></span>
+      </button>
+      <button class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-save"   id="modal-save">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Shared image popup -->
+<div class="thumb-popup" id="thumb-popup"><img id="thumb-popup-img" src="" alt="" /></div>
+
+<script>
+  const modeSelect      = document.getElementById('mode');
+  const setField        = document.getElementById('set-field');
+  const fileField       = document.getElementById('file-field');
+  const multiSheetField = document.getElementById('multi-sheet-field');
+  const fileInput       = document.getElementById('set_file');
+  const fileNameDisplay = document.getElementById('file-name-display');
+  const submitBtn       = document.getElementById('submit-btn');
+  const outputWrap      = document.getElementById('output-wrap');
+  const outputTitle     = document.getElementById('output-title');
+  const terminalBody    = document.getElementById('terminal-body');
+  const setCardsBody    = document.getElementById('set-cards-body');
+  const setCardsScroll  = document.getElementById('set-cards-scroll');
+  const summaryBar      = document.getElementById('summary-bar');
+  const filterBar       = document.getElementById('filter-bar');
+  const outputPre       = document.getElementById('output');
+  const emptyState      = document.getElementById('empty-state');
+  const loadingState    = document.getElementById('loading-state');
+
+
+  /* ── Settings modal ── */
+  const cogBtn       = document.getElementById('cog-btn');
+  const settingsModal = document.getElementById('settings-modal');
+  const modalClose   = document.getElementById('modal-close');
+  const modalCancel  = document.getElementById('modal-cancel');
+  const modalSave    = document.getElementById('modal-save');
+  const saveStatus   = document.getElementById('save-status');
+
+  const fieldMap = {
+    'cfg-consumer-key':    'consumer_key',
+    'cfg-consumer-secret': 'consumer_secret',
+    'cfg-token-value':     'token_value',
+    'cfg-token-secret':    'token_secret',
+  };
+
+  async function openSettings() {
+    saveStatus.textContent = '';
+    saveStatus.className = 'save-status';
+
+    // Reset all inputs to empty + hidden before opening
+    for (const inputId of Object.keys(fieldMap)) {
+      const input = document.getElementById(inputId);
+      input.value = '';
+      input.type  = 'password';
+      input.classList.remove('has-value');
+      // Reset show btn icon
+      const btn = input.parentElement.querySelector('.show-btn');
+      if (btn) btn.textContent = '👁';
+    }
+
+    // Ask backend which fields already have a saved value (boolean only — no secrets sent)
+    try {
+      const res  = await fetch('/settings');
+      const data = await res.json();
+      for (const [inputId, key] of Object.entries(fieldMap)) {
+        const input = document.getElementById(inputId);
+        if (data[key]) {
+          // Has a saved value — show green border and placeholder hint
+          input.classList.add('has-value');
+          input.placeholder = 'Value saved — enter new value to update';
+        } else {
+          input.placeholder = 'Enter value…';
+        }
+      }
+    } catch(e) {
+      // Non-fatal — open with blank fields
+    }
+
+    settingsModal.classList.add('visible');
+    document.getElementById('cfg-consumer-key').focus();
+  }
+
+  function closeSettings() {
+    settingsModal.classList.remove('visible');
+  }
+
+  cogBtn.addEventListener('click', openSettings);
+  modalClose.addEventListener('click', closeSettings);
+  modalCancel.addEventListener('click', closeSettings);
+
+  // Close on backdrop click
+  settingsModal.addEventListener('click', e => {
+    if (e.target === settingsModal) closeSettings();
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && settingsModal.classList.contains('visible')) closeSettings();
+  });
+
+  // Show/hide toggles
+  document.querySelectorAll('.show-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      const show  = input.type === 'password';
+      input.type  = show ? 'text' : 'password';
+      btn.textContent = show ? '🙈' : '👁';
+    });
+  });
+
+  // Mark field as having content
+  document.querySelectorAll('.secret-input-wrap input').forEach(input => {
+    input.addEventListener('input', () => {
+      input.classList.toggle('has-value', input.value.length > 0);
+    });
+  });
+
+  // Save
+  modalSave.addEventListener('click', async () => {
+    modalSave.disabled = true;
+    saveStatus.textContent = '';
+
+    const payload = {};
+    for (const [inputId, key] of Object.entries(fieldMap)) {
+      payload[key] = document.getElementById(inputId).value;
+    }
+
+    try {
+      const res  = await fetch('/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        saveStatus.textContent = '✓ Saved successfully';
+        saveStatus.className   = 'save-status ok';
+        setTimeout(closeSettings, 1200);
+      } else {
+        saveStatus.textContent = '✗ ' + (data.error || 'Save failed');
+        saveStatus.className   = 'save-status err';
+      }
+    } catch(e) {
+      saveStatus.textContent = '✗ Network error';
+      saveStatus.className   = 'save-status err';
+    } finally {
+      modalSave.disabled = false;
+    }
+  });
+
+  /* ── Mode toggle ── */
+  modeSelect.addEventListener('change', () => {
+    const isFile = modeSelect.value === 'file';
+    setField.style.display  = isFile ? 'none' : 'block';
+    fileField.style.display = isFile ? 'block' : 'none';
+    multiSheetField.classList.toggle('visible', isFile);
+  });
+
+  fileInput.addEventListener('change', () => {
+    fileNameDisplay.textContent = fileInput.files[0]
+      ? fileInput.files[0].name : 'Choose a .txt file…';
+  });
+
+  /* ── Submit ── */
+  submitBtn.addEventListener('click', async () => {
+    const mode = modeSelect.value;
+    let setNumber = '';
+
+    if (mode === 'set') {
+      let raw = document.getElementById('set_number').value.trim();
+      if (!raw) { showError('⚠️  Please enter a set number.'); return; }
+
+      // Strip any existing suffix then always append -1
+      raw = raw.replace(/-\d+$/, '');
+      if (!/^\d+$/.test(raw)) { showError('⚠️  Invalid format — enter digits only (e.g. 75192)'); return; }
+      setNumber = raw + '-1';
+
+    } else {
+      if (!fileInput.files[0]) { showError('⚠️  Please select a file to upload.'); return; }
+    }
+
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append('mode', mode);
+    if (mode === 'set') {
+      formData.append('set_number', setNumber);
+    } else {
+      formData.append('set_file', fileInput.files[0]);
+      formData.append('multi_sheet', document.getElementById('multi_sheet').value);
+    }
+
+    try {
+      const response = await fetch('/generate', { method: 'POST', body: formData });
+      const data     = await response.json();
+
+      if (data.error && !data.output) {
+        showError('❌  ' + data.error);
+      } else if (data.output && !data.error) {
+        const sets = parseAllSets(data.output);
+        if (sets.length === 0) {
+          showError('⚠️  Could not parse any set data from the output.\n\n' + data.output);
+        } else {
+          showSetCards(sets, mode === 'file');
+        }
+      } else {
+        let text = data.error ? '⚠️  ' + data.error + '\n\n' : '';
+        text += data.output || '(No output)';
+        showError(text);
+      }
+    } catch (err) {
+      showError('❌  Network error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  /* ════════════════════════════════
+     PARSING
+     Splits raw log text into one
+     object per "Item: XXXXX-1" block
+  ════════════════════════════════ */
+  function parseAllSets(text) {
+    const sets  = [];
+    const chunks = text.split(/(?=^\s*Item:\s)/m).filter(c => c.trim());
+
+    for (const chunk of chunks) {
+      const lines = chunk.split('\n');
+
+      // Top-level fields (outside any sub-section)
+      const top = {};
+      // Sub-section buckets
+      const sections = {};
+      let currentSection = null;
+
+      for (const line of lines) {
+        // Detect sub-section headers — exactly 2-space indent, no value after colon
+        const sectionMatch = line.match(/^( {2})(Current Sales|Previous Sales):\s*$/i);
+        if (sectionMatch) {
+          currentSection = sectionMatch[2].toLowerCase();
+          sections[currentSection] = {};
+          continue;
+        }
+        const m = line.match(/^(\s*)([^:]+):\s*(.+)$/);
+        if (!m) continue;
+        const indent = m[1].length;
+        const key    = m[2].trim().toLowerCase();
+        const val    = m[3].trim();
+        // Lines with <=2 spaces of indent are top-level — reset section context
+        if (indent <= 2) {
+          currentSection = null;
+          top[key] = val;
+        } else if (currentSection) {
+          sections[currentSection][key] = val;
+        } else {
+          top[key] = val;
+        }
+      }
+
+      if (!top['name'] && !top['item']) continue;
+
+      const cur  = sections['current sales']  || {};
+      const prev = sections['previous sales'] || {};
+
+      sets.push({
+        number:    top['item']          || '—',
+        name:      top['name']          || '—',
+        category:  top['category']      || '—',
+        year:      top['year released'] || top['year'] || '—',
+        thumbnail: top['thumbnail'] ? 'http:' + top['thumbnail'] : '',
+        image:     top['image']     ? 'http:' + top['image']     : '',
+        // Current Sales
+        cur_avg: cur['average'] || cur['avg price'] || '—',
+        cur_max: cur['max']     || cur['max price'] || '—',
+        cur_min: cur['min']     || cur['min price'] || '—',
+        cur_qty: cur['quantity avail'] || cur['quantity available'] || cur['qty'] || '—',
+        // Previous Sales
+        prev_avg: prev['average'] || prev['avg price'] || '—',
+        prev_max: prev['max']     || prev['max price'] || '—',
+        prev_min: prev['min']     || prev['min price'] || '—',
+        prev_qty:  prev['quantity avail'] || prev['quantity available'] || prev['qty'] || '—',
+        prev_date: formatSaleDate(prev['last sale date'] || prev['last sale'] || ''),
+        // Derived
+        saleValue: calcSaleValue(
+          cur['average'] || cur['avg price'],
+          cur['max']     || cur['max price']
+        ),
+      });
+    }
+    return sets;
+  }
+
+  /* ════════════════════════════════
+     RENDERING
+  ════════════════════════════════ */
+  function buildSetCard(s) {
+    const card = document.createElement('div');
+    card.className = 'set-card';
+    card.innerHTML = `
+      <div class="set-hero">
+        <div style="flex:1;min-width:0;">
+          <div class="set-number-badge">${esc(s.number)}</div>
+          <div class="set-name">${esc(s.name)}</div>
+          <div class="set-category">${esc(s.category)}</div>
+        </div>
+        ${s.thumbnail ? `<div class="thumb-wrap" data-image="${esc(s.image || s.thumbnail)}">
+          <img class="thumb-img" src="${esc(s.thumbnail)}" alt="${esc(s.name)}" loading="lazy" />
+        </div>` : ''}
+        <div class="set-year-badge">${esc(s.year)}</div>
+      </div>
+      <div class="set-stats">
+        <div class="stats-section-label current">Current Items for Sale</div>
+        <div class="stat-block highlight">
+          <div class="stat-label">Avg</div>
+          <div class="stat-value">${formatPrice(s.cur_avg)}</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Max</div>
+          <div class="stat-value">${formatPrice(s.cur_max)}</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Min</div>
+          <div class="stat-value">${formatPrice(s.cur_min)}</div>
+        </div>
+        <div class="stat-block qty">
+          <div class="stat-label">Qty</div>
+          <div class="stat-value">${esc(s.cur_qty)}</div>
+        </div>
+        <div class="stat-block sale no-border">
+          <div class="stat-label">Sale Value</div>
+          <div class="stat-value">${formatPrice(s.saleValue)}</div>
+        </div>
+        <div class="stats-section-label previous">Past Sales</div>
+        <div class="stat-block prev">
+          <div class="stat-label">Avg</div>
+          <div class="stat-value">${formatPrice(s.prev_avg)}</div>
+        </div>
+        <div class="stat-block prev">
+          <div class="stat-label">Max</div>
+          <div class="stat-value">${formatPrice(s.prev_max)}</div>
+        </div>
+        <div class="stat-block prev">
+          <div class="stat-label">Min</div>
+          <div class="stat-value">${formatPrice(s.prev_min)}</div>
+        </div>
+        <div class="stat-block prev qty no-border">
+          <div class="stat-label">Qty</div>
+          <div class="stat-value">${esc(s.prev_qty)}</div>
+        </div>
+        <div class="stat-block prev sale no-border">
+          <div class="stat-label">Sale Value</div>
+          <div class="stat-value">${formatPrice(calcSaleValue(s.prev_avg, s.prev_max))}</div>
+        </div>
+        <div class="stat-block prev last-sale">
+          <div class="stat-label">Last Sale</div>
+          <div class="stat-value last-sale-date">${esc(s.prev_date)}</div>
+        </div>
+      </div>`;
+    return card;
+  }
+
+  // Full parsed set list — kept for filtering
+  let _allSets = [];
+  let _activeCategory = 'all';
+
+  function showSetCards(sets, isFileMode) {
+    _allSets = sets;
+    _activeCategory = 'all';
+
+    // Build category filter chips (file mode only)
+    if (isFileMode && sets.length > 1) {
+      const counts = {};
+      sets.forEach(s => {
+        const cat = s.category || '—';
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
+      const categories = Object.keys(counts).sort();
+
+      // Clear old chips (keep label)
+      filterBar.querySelectorAll('.filter-chip').forEach(c => c.remove());
+
+      // "All" chip
+      const allChip = makeChip('All', sets.length, true);
+      allChip.addEventListener('click', () => applyFilter('all'));
+      filterBar.appendChild(allChip);
+
+      // Per-category chips
+      categories.forEach(cat => {
+        const chip = makeChip(cat, counts[cat], false);
+        chip.addEventListener('click', () => applyFilter(cat));
+        filterBar.appendChild(chip);
+      });
+
+      filterBar.classList.add('visible');
+    } else {
+      filterBar.classList.remove('visible');
+    }
+
+    renderCards(sets, isFileMode);
+
+    outputTitle.textContent    = isFileMode
+      ? `${sets.length} Set${sets.length !== 1 ? 's' : ''} Found`
+      : 'Set Details';
+    terminalBody.style.display = 'none';
+    setCardsBody.style.display = 'none';
+    revealOutput();
+    requestAnimationFrame(() => { setCardsBody.style.display = 'flex'; });
+  }
+
+  function applyFilter(category) {
+    _activeCategory = category;
+    const filtered  = category === 'all'
+      ? _allSets
+      : _allSets.filter(s => s.category === category);
+
+    // Update chip active states
+    filterBar.querySelectorAll('.filter-chip').forEach(chip => {
+      const isAll = category === 'all' && chip.dataset.cat === 'all';
+      const match = chip.dataset.cat === category;
+      chip.classList.toggle('active', isAll || match);
+    });
+
+    renderCards(filtered, true);
+  }
+
+  function renderCards(sets, isFileMode) {
+    setCardsScroll.innerHTML = '';
+    sets.forEach(s => setCardsScroll.appendChild(buildSetCard(s)));
+
+    if (isFileMode && _allSets.length > 1) {
+      const currency = (_allSets[0]?.cur_avg || _allSets[0]?.prev_avg || '').split(' ')[1] || '';
+
+      const curAvgs  = sets.map(s => parseFloat(s.cur_avg)).filter(n => !isNaN(n));
+      const prevAvgs = sets.map(s => parseFloat(s.prev_avg)).filter(n => !isNaN(n));
+
+      const sumCur  = curAvgs.length  ? curAvgs.reduce((a, b)  => a + b, 0).toFixed(0)  : null;
+      const sumPrev = prevAvgs.length ? prevAvgs.reduce((a, b) => a + b, 0).toFixed(0) : null;
+
+      document.getElementById('summary-count').textContent    = sets.length;
+      document.getElementById('summary-avg').textContent      = sumCur
+        ? `${Number(sumCur).toLocaleString()} ${currency}` : '—';
+      document.getElementById('summary-avg-prev').textContent = sumPrev
+        ? `${Number(sumPrev).toLocaleString()} ${currency}` : '—';
+      summaryBar.style.display = 'flex';
+    } else {
+      summaryBar.style.display = 'none';
+    }
+  }
+
+  function makeChip(label, count, active) {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip' + (active ? ' active' : '');
+    chip.dataset.cat = active && label === 'All' ? 'all' : label;
+    chip.innerHTML = `${esc(label)} <span class="chip-count">(${count})</span>`;
+    return chip;
+  }
+
+  function showError(msg) {
+    outputPre.textContent      = msg;
+    outputPre.className        = 'error-text';
+    outputTitle.textContent    = 'Error';
+    terminalBody.style.display = 'block';
+    setCardsBody.style.display = 'none';
+    revealOutput();
+  }
+
+  function revealOutput() {
+    emptyState.classList.add('hidden');
+    outputWrap.classList.remove('visible');
+    void outputWrap.offsetWidth;
+    outputWrap.classList.add('visible');
+  }
+
+  function setLoading(loading) {
+    submitBtn.disabled = loading;
+    submitBtn.classList.toggle('loading', loading);
+
+    // Show content-area spinner only for file mode (single set is fast enough)
+    if (modeSelect.value === 'file') {
+      if (loading) {
+        emptyState.classList.add('hidden');
+        outputWrap.classList.remove('visible');
+        loadingState.classList.add('visible');
+      } else {
+        loadingState.classList.remove('visible');
+      }
+    }
+  }
+
+
+
+  // Test connection
+  const modalTest = document.getElementById('modal-test');
+
+  modalTest.addEventListener('click', async () => {
+    modalTest.disabled = true;
+    modalSave.disabled = true;
+    modalTest.classList.add('testing');
+    saveStatus.textContent = 'Testing connection…';
+    saveStatus.className = 'save-status';
+
+    // Collect whatever the user has typed — empty fields will be ignored
+    // by the backend which will fall back to the saved config values
+    const payload = {};
+    for (const [inputId, key] of Object.entries(fieldMap)) {
+      payload[key] = document.getElementById(inputId).value.trim();
+    }
+
+    try {
+      const res  = await fetch('/settings/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        saveStatus.textContent = '✓ Connection successful';
+        saveStatus.className   = 'save-status ok';
+      } else {
+        saveStatus.textContent = '✗ Connection failed' + (data.error ? ': ' + data.error : '');
+        saveStatus.className   = 'save-status err';
+      }
+    } catch(e) {
+      saveStatus.textContent = '✗ Network error';
+      saveStatus.className   = 'save-status err';
+    } finally {
+      modalTest.disabled = false;
+      modalSave.disabled = false;
+      modalTest.classList.remove('testing');
+    }
+  });
+
+  /* ── Thumbnail hover popup ── */
+  const thumbPopup    = document.getElementById('thumb-popup');
+  const thumbPopupImg = document.getElementById('thumb-popup-img');
+
+  document.addEventListener('mouseover', e => {
+    const wrap = e.target.closest('.thumb-wrap');
+    if (!wrap) return;
+    const src = wrap.dataset.image;
+    if (!src) return;
+    thumbPopupImg.src = src;
+    thumbPopup.classList.add('visible');
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!thumbPopup.classList.contains('visible')) return;
+    // Position popup offset from cursor, flip if near edge
+    const pad = 16;
+    const pw  = 340;
+    const ph  = 340;
+    let x = e.clientX + pad;
+    let y = e.clientY + pad;
+    if (x + pw > window.innerWidth)  x = e.clientX - pw - pad;
+    if (y + ph > window.innerHeight) y = e.clientY - ph - pad;
+    thumbPopup.style.left = x + 'px';
+    thumbPopup.style.top  = y + 'px';
+  });
+
+  document.addEventListener('mouseout', e => {
+    if (!e.target.closest('.thumb-wrap')) return;
+    // Only hide if we've left the thumb-wrap entirely
+    if (!e.relatedTarget || !e.relatedTarget.closest('.thumb-wrap')) {
+      thumbPopup.classList.remove('visible');
+    }
+  });
+
+  /* ── Helpers ── */
+  function formatSaleDate(raw) {
+    if (!raw) return '—';
+    try {
+      // Parse directly from ISO string to avoid timezone shifts
+      // Format: YYYY-MM-DDTHH:MM:SS.mmmZ
+      const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+      if (!m) return '—';
+      const year  = parseInt(m[1], 10);
+      const month = parseInt(m[2], 10) - 1; // 0-indexed for Date
+      const day   = parseInt(m[3], 10);
+      // Construct date in UTC explicitly to get correct month/day/year
+      const d = new Date(Date.UTC(year, month, day));
+      return d.toLocaleDateString(undefined, {
+        month: 'long', day: 'numeric', year: 'numeric',
+        timeZone: 'UTC'
+      });
+    } catch(e) { return '—'; }
+  }
+
+  function calcSaleValue(avgRaw, maxRaw) {
+    // Sale value = average of (avg price) and (max price)
+    const avgNum = parseFloat((avgRaw || '').split(' ')[0]);
+    const maxNum = parseFloat((maxRaw || '').split(' ')[0]);
+    const currency = (avgRaw || '').split(' ')[1] || '';
+    if (isNaN(avgNum) || isNaN(maxNum)) return '—';
+    return Math.round((avgNum + maxNum) / 2) + (currency ? ' ' + currency : '');
+  }
+
+
+  function formatPrice(raw) {
+    const parts = (raw || '').split(' ');
+    if (parts.length === 2 && !isNaN(parts[0]))
+      return `${Number(parts[0]).toLocaleString()}<span class="currency">${parts[1]}</span>`;
+    return raw || '—';
+  }
+
+  function esc(str) {
+    return String(str ?? '—')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
